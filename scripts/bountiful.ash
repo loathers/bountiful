@@ -33,7 +33,9 @@ boolean useCopier = get_property("bountiful.useCopier").to_boolean();
 boolean useFax = get_property("bountiful.useFax").to_boolean();
 boolean useRun = get_property("bountiful.useRunaway").to_boolean();
 int maxBanish = get_property("bountiful.maxBanishCost").to_int();
+  if(maxBanish == 0) maxBanish = 1000000000;
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
+  if(maxSpecial == 0) maxSpecial = 1000000000;
 
 // Constants
 string EASY = "easy";
@@ -49,11 +51,12 @@ int[item] BAN_ITEMS = {
 };
 
 boolean[skill] BAN_SKILLS = {
-  $skill[Snokebomb] : true
+  $skill[Snokebomb] : true,
+  $skill[Talk About Politics] : true
 };
 
 //----------------------------------------
-// Private Functions
+// Private Bounty Functions
 
 bounty _bounty(string type) {
   bounty ret;
@@ -99,37 +102,86 @@ boolean _accepted(string type) {
   return false;
 }
 
-// TODO: Only items, needs skills
-monster[item] get_used_banishers() {
-  // Banished monster data is stored in the format by mafia:
-  // monster1:item1:turn_used1:monster2:item2:turn_used2:etc...
-  string[int] banish_data = get_property("banishedMonsters").split_string(":");
-
-  monster[item] list;
-  for(int i = 0; i < banish_data.count(); i += 3) {
-    monster m = to_monster(banish_data[i]);
-    int[monster] invert;
-    foreach id, em in get_monsters(_bounty(current).location) {
-      invert[em] = id;
-    }
-    item it = to_item(banish_data[i + 1]);
-    if(invert contains m) list[it] = m;
-  }
-
-  return list;
+// @Overload
+boolean _accepted(bounty b) {
+  return _accepted(b.type);
 }
 
-item get_unused_banisher() {
-  monster[item] used = get_used_banishers();
+/**
+* Returns the number of bounty items acquired of the given type
+* @param {string} type - the bounty type
+* @returns {int} - Returns the bounty item count if the type is accepted, or
+                   -1 if the given type is not currently accepted
+*/
+int _count(string type) {
+  string[int] prop;
+  if(_accepted(type)) {
+    switch(type) {
+      case EASY:
+        prop = get_property("currentEasyBountyItem").split_string(":");
+        return prop[1].to_int();
+      case HARD:
+        prop = get_property("currentHardBountyItem").split_string(":");
+        return prop[1].to_int();
+      case SPECIAL:
+        prop = get_property("currentSpecialBountyItem").split_string(":");
+        return prop[1].to_int();
+      default:
+        abort("_count: Invalid bounty type");
+      return -1;
+    }
+  } else {
+    return -888;
+  }
+}
+
+int _remaining(string type) {
+  int count = _count(type);
+  int total = _bounty(type).number;
+
+  if(count >= 0) {
+    return total - count;
+  } else {
+    return count;
+  }
+}
+
+//----------------------------------------
+// Helper Functions
+
+// cute logic to calculate copiers per day
+int copies_available() {
+  int copies = 0;
+
+  if(available_amount($item[Rain-Doh black box]) > 0) {
+    copies += 1;
+  }
+
+  if(available_amount($item[Spooky Putty sheet]) > 0) {
+    copies += 1;
+  }
+
+  if(copies > 0) {
+    copies += 4;
+  }
+
+  return copies;
+}
+
+boolean buy_banishers() {
+  int count = 0;
 
   foreach banisher in BAN_ITEMS {
-    if(!(used contains banisher)) {
-      return banisher;
+    if(item_amount(banisher) < 1) {
+      count += buy(1, banisher, maxBanish);
     }
   }
 
-  return $item[none];
+  return count > 0;
 }
+
+//----------------------------------------
+// BHH Functions
 
 /**
 * Visits the BHH and possibly performs an action based on the query
@@ -155,6 +207,11 @@ boolean accept_bounty(string type) {
   visit_bhh(query);
   visit_bhh();
   return true;
+}
+
+// @Overload
+boolean accept_bounty(bounty b) {
+  return accept_bounty(b.type);
 }
 
 // TODO
@@ -184,37 +241,6 @@ boolean is_hunted(string opp) {
   return is_hunted(to_monster(opp));
 }
 
-/**
-* Custom action filter, see here:
-*   http://wiki.kolmafia.us/index.php?title=Adventure
-* @param {int} round   - the current combat round
-* @param {monster} opp - the current enemy monster
-* @param {string} text - the current page text
-* @returns {boolean} - if the given monster is being hunted
-*/
-string combat(int round, monster opp, string text) {
-  // Check if the current monster is worth hunting
-  if(is_hunted(opp)) {
-    if(useCopier && (round == 0) && _accepted(current)) {
-      if((item_amount($item[Rain-Doh black box]) > 0) &&
-          $item[Rain-Doh black box].dailyusesleft > 0) {
-        return "item Rain-Doh black box";
-      } else if(item_amount($item[Spooky Putty sheet]) > 0 &&
-          $item[Spooky Putty sheet].dailyusesleft > 0) {
-        return "item Spooky Putty sheet";
-      }
-    }
-  } else if(useBan) {
-    item banisher = get_unused_banisher();
-    if(item_amount(banisher) > 0) {
-      return "item " + to_string(banisher);
-    }
-  }
-
-  // Default to CCS if custom actions can't happen
-  return get_ccs_action(round);
-}
-
 bounty optimal_bounty() {
   bounty[int] bounty_counts;
   bounty_counts[_bounty(EASY).number] = _bounty(EASY);
@@ -232,6 +258,8 @@ bounty optimal_bounty() {
 }
 
 boolean hunt_bounty(bounty b) {
+  accept_bounty(b.type); // doesn't do anything if already accepted
+
   if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
     faxbot(_bounty(b.type).monster);
     use(1, $item[photocopied monster]);
@@ -244,17 +272,185 @@ boolean hunt_bounty(bounty b) {
     current = b.type;
     adventure(1, b.location, "combat");
   }
+  // refresh BHH information
   visit_bhh();
   return false;
 }
 
-// Main function execution
-void main(string params) {
-  if(!_accepted(optimal_bounty().type)) {
-    accept_bounty(optimal_bounty().type);
+// @Overload
+boolean hunt_bounty(string b) {
+  return hunt_bounty(_bounty(b));
+}
+
+//----------------------------------------
+// Combat Functions
+
+// TODO: Only items, needs skills
+monster[item] get_used_item_banishers() {
+  // Banished monster data is stored in the format by mafia:
+  // monster1:item1:turn_used1:monster2:item2:turn_used2:etc...
+  string[int] banish_data = get_property("banishedMonsters").split_string(":");
+
+  monster[item] list;
+  for(int i = 0; i < banish_data.count(); i += 3) {
+    monster m = to_monster(banish_data[i]);
+    int[monster] invert;
+    foreach id, em in get_monsters(_bounty(current).location) {
+      invert[em] = id;
+    }
+    item it = to_item(banish_data[i + 1]);
+    if(invert contains m && it.combat) list[it] = m;
   }
-  while(optimal_bounty() != $bounty[none]) {
-    current = optimal_bounty().type;
-    hunt_bounty(optimal_bounty());
+
+  return list;
+}
+
+item get_unused_item_banisher() {
+  monster[item] used = get_used_item_banishers();
+
+  foreach banisher in BAN_ITEMS {
+    if(!(used contains banisher)) {
+      return banisher;
+    }
+  }
+
+  return $item[none];
+}
+
+monster[skill] get_used_skill_banishers() {
+  // Banished monster data is stored in the format by mafia:
+  // monster1:item1:turn_used1:monster2:item2:turn_used2:etc...
+  string[int] banish_data = get_property("banishedMonsters").split_string(":");
+
+  monster[skill] list;
+  for(int i = 0; i < banish_data.count(); i += 3) {
+    monster m = to_monster(banish_data[i]);
+    int[monster] invert;
+    foreach id, em in get_monsters(_bounty(current).location) {
+      invert[em] = id;
+    }
+    skill sk = to_skill(banish_data[i + 1]);
+    if(invert contains m && sk.combat) list[sk] = m;
+  }
+
+  return list;
+}
+
+skill get_unused_skill_banisher() {
+  monster[skill] used = get_used_skill_banishers();
+
+  foreach banisher in BAN_SKILLS {
+    if(!(used contains banisher)) {
+      return banisher;
+    }
+  }
+
+  return $skill[none];
+}
+
+/**
+* Custom action filter, see here:
+*   http://wiki.kolmafia.us/index.php?title=Adventure
+* @param {int} round   - the current combat round
+* @param {monster} opp - the current enemy monster
+* @param {string} text - the current page text
+* @returns {boolean} - if the given monster is being hunted
+*/
+string combat(int round, monster opp, string text) {
+  // Check if the current monster is hunted
+  if(is_hunted(opp)) {
+    // Copy round 1 if can
+    // current wouldn't be needed if there was a to_bounty(monster m),
+    // maybe I'll make one
+    if(useCopier && (round == 0) && (_remaining(current) > 1)) {
+      int doh_copies = get_property("_raindohCopiesMade").to_int();
+      int putty_copies = get_property("spookyPuttyCopiesMade").to_int();
+
+      if((doh_copies + putty_copies) < copies_available()) {
+        if((item_amount($item[Rain-Doh black box]) > 0) &&
+           (doh_copies < 5)) {
+          return "item Rain-Doh black box";
+        } else if(item_amount($item[Spooky Putty sheet]) > 0 &&
+                 (putty_copies < 5)) {
+          return "item Spooky Putty sheet";
+        }
+      }
+    }
+    // Ban logic
+  } else if(useBan) {
+    skill skill_banisher = get_unused_skill_banisher();
+    if(have_skill(skill_banisher)) {
+      return "cast " + to_string(skill_banisher);
+    }
+
+    item item_banisher = get_unused_item_banisher();
+    if(item_amount(item_banisher) > 0) {
+      return "item " + to_string(item_banisher);
+    }
+  } else if(useRun) {
+    // TODO: runaway logic
+  }
+
+  // Default to CCS if custom actions can't happen
+  return get_ccs_action(round);
+}
+
+//----------------------------------------
+// Main Function
+
+void main(string params) {
+  string[int] args = split_string(params, " ");
+  string doWhat = args[0];
+  int arglen = count(args);
+
+  // Command handling
+  switch(doWhat) {
+    case 'hunt':
+      if(arglen > 2) {
+        switch(args[1]) {
+          // This will accept *ALL* easy/hard/special bounties
+          // ie. if you have an easy from a previous day, it will do that one,
+          // as well as the easy for the current day
+          case 'easy':
+            while(_bounty(EASY) != $bounty[none]) {
+              hunt_bounty(optimal_bounty());
+            }
+            break;
+          case 'hard':
+            while(_bounty(HARD) != $bounty[none]) {
+              hunt_bounty(optimal_bounty());
+            }
+            break;
+          case 'special':
+            while(_bounty(SPECIAL) != $bounty[none]) {
+              hunt_bounty(optimal_bounty());
+            }
+            break;
+          case 'optimal':
+          case 'fastest':
+          case 'best':
+            bounty b = optimal_bounty();
+            while(_bounty(b.type) != $bounty[none]) {
+              hunt_bounty(optimal_bounty());
+            }
+            break;
+          case 'all':
+            while(optimal_bounty() != $bounty[none]) {
+              hunt_bounty(optimal_bounty());
+            }
+            break;
+          default:
+            print("Invalid bounty type!", "red");
+        }
+      } else {
+        print("No bounty type given!", "red");
+      }
+      break;
+    case 'list':
+      print_current();
+      print_available();
+      break;
+    default:
+      print("Invalid command!", "red");
   }
 }
