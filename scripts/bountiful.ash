@@ -10,6 +10,7 @@
 script "Bountiful";
 notify tamedtheturtle;
 since r18000;
+import <canadv.ash>;
 
 /****************************
 Custom Properties Used:
@@ -35,7 +36,7 @@ boolean useRun = get_property("bountiful.useRunaway").to_boolean();
 int maxBanish = get_property("bountiful.maxBanishCost").to_int();
   if(maxBanish == 0) maxBanish = 1000000000;
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
-  if(maxSpecial == 0) maxSpecial = 1000000000;
+  if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit ").to_int();
 
 // Constants
 string EASY = "easy";
@@ -53,6 +54,25 @@ int[item] BAN_ITEMS = {
 boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,
   $skill[Talk About Politics] : true
+};
+
+// Unlockers
+item[location] CONTENT_ITEMS = {
+  $location[Anger Man's Level] : $item[jar of psychoses (The Crackpot Mystic)],
+  $location[Pirates of the Garbage Barges] : $item[one-day ticket to Dinseylandfill],
+  $location[the Ice Hotel] : $item[one-day ticket to The Glaciest],
+  $location[The Stately Pleasure Dome] : $item[tiny bottle of absinthe],
+  $location[Domed City of Grimacia] : $item[transporter transponder],
+  $location[LavaCo&trade; Lamp Factory] : $item[one-day ticket to That 70s Volcano],
+  $location[The Clumsiness Grove] : $item[devilish folio],
+  $location[The Nightmare Meatrealm] : $item[jar of psychoses (The Meatsmith)],
+  $location[Sloppy Seconds Diner] : $item[one-day ticket to Spring Break Beach],
+  $location[An Incredibly Strange Place (Bad Trip)] : $item[astral mushroom],
+  $location[the Red Queen's Garden] : $item[&quot;DRINK ME&quot; potion],
+  $location[Mt. Molehill] : $item[llama lama gong],
+  $location[The Jungles of Ancient Loathing] : $item[empty agua de vida bottle],
+  $location[Chinatown Shops] : $item[jar of psychoses (The Suspicious-Looking Guy)],
+  $location[the Secret Government Laboratory] : $item[one-day ticket to Conspiracy Island]
 };
 
 //----------------------------------------
@@ -260,21 +280,32 @@ bounty optimal_bounty() {
 boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
 
+  // use fax if that's what we're doing
   if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
     faxbot(_bounty(b.type).monster);
     use(1, $item[photocopied monster]);
-  } else if(item_amount($item[Rain-Doh box full of monster]) > 0 ||
-            $item[Rain-Doh black box].dailyusesleft > 0) {
+  // use copy if that's what we're doing
+  } else if(item_amount($item[Rain-Doh box full of monster]) > 0 &&
+            to_monster(get_property("rainDohMonster")) == b.monster) {
     use(1, $item[Rain-Doh box full of monster]);
-  } else if(item_amount($item[Spooky Putty monster]) > 0) {
+  } else if(item_amount($item[Spooky Putty monster]) > 0 &&
+            to_monster(get_property("spookyPuttyMonster")) == b.monster) {
     use(1, $item[Spooky Putty monster]);
-  } else {
+  // if location is avilable or affordable, adventure
+  } else if(can_adv(b.location, false) ||
+            (b.type == SPECIAL &&
+            mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
     current = b.type;
     adventure(1, b.location, "combat");
+  } else {
+    // turns out we're doing nothing
+    visit_bhh(); // refreshing because ??
+    return false;
   }
+
   // refresh BHH information
   visit_bhh();
-  return false;
+  return true;
 }
 
 // @Overload
@@ -413,17 +444,17 @@ void main(string params) {
           // as well as the easy for the current day
           case 'easy':
             while(_bounty(EASY) != $bounty[none]) {
-              hunt_bounty(optimal_bounty());
+              if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
             while(_bounty(HARD) != $bounty[none]) {
-              hunt_bounty(optimal_bounty());
+              if(!hunt_bounty(_bounty(HARD))) break;
             }
             break;
           case 'special':
             while(_bounty(SPECIAL) != $bounty[none]) {
-              hunt_bounty(optimal_bounty());
+              if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
             break;
           case 'optimal':
@@ -431,12 +462,12 @@ void main(string params) {
           case 'best':
             bounty b = optimal_bounty();
             while(_bounty(b.type) != $bounty[none]) {
-              hunt_bounty(optimal_bounty());
+              if(!hunt_bounty(b)) break;
             }
             break;
           case 'all':
             while(optimal_bounty() != $bounty[none]) {
-              hunt_bounty(optimal_bounty());
+              if(!hunt_bounty(optimal_bounty())) break;
             }
             break;
           default:
