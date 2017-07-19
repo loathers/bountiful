@@ -1,6 +1,6 @@
 /******************************************************************************
 * Bountiful by RESPRiT
-* Version 0.1
+* Version 0.2
 * https://github.com/RESPRiT
 *
 * Adapted from AutoBHH:
@@ -12,7 +12,7 @@ notify tamedtheturtle;
 since r18000;
 import <canadv.ash>;
 
-/****************************
+/********************************
 Custom Properties Used:
  - bountiful.useBanisher
  - bountiful.useCopier
@@ -20,7 +20,8 @@ Custom Properties Used:
  - bountiful.useRunaway
  - bountiful.maxBanishCost
  - bountiful.maxSpecialCost
-*****************************/
+ - bountiful.automaticallyGiveup
+********************************/
 
 //----------------------------------------
 // Global Variables
@@ -37,6 +38,7 @@ int maxBanish = get_property("bountiful.maxBanishCost").to_int();
   if(maxBanish == 0) maxBanish = 1000000000;
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
   if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit ").to_int();
+boolean giveup = get_property("bountiful.automaticallyGiveup").to_boolean();
 
 // Constants
 string EASY = "easy";
@@ -212,6 +214,20 @@ boolean can_banish(location l) {
   return !(NO_BANISH_LOCATIONS contains l);
 }
 
+boolean use_combat(item it, string filter) {
+  string page = visit_url("inv_use.php?&pwd&which=3&checked=1&whichitem=" + it.to_int());
+
+  if(page.contains_text("You don't have the item you're trying to use")) {
+    return false;
+  }
+
+  if(page.contains_text("You're fighting")) {
+    run_combat(filter);
+  }
+
+  return true;
+}
+
 //----------------------------------------
 // BHH Functions
 
@@ -221,6 +237,7 @@ boolean can_banish(location l) {
 * @returns {string} - the page text
 */
 string visit_bhh(string query) {
+  print("bounty.php?pwd"+query);
   string page = visit_url("bounty.php?pwd"+query);
   return page;
 }
@@ -244,6 +261,12 @@ boolean accept_bounty(string type) {
 // @Overload
 boolean accept_bounty(bounty b) {
   return accept_bounty(b.type);
+}
+
+boolean cancel_bounty(string type) {
+  visit_bhh("&action=giveup_"+substring(_bounty(type).kol_internal_type, 0, 3));
+  visit_bhh();
+  return true;
 }
 
 // TODO
@@ -292,29 +315,32 @@ bounty optimal_bounty() {
 boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
 
+  // BUG: can't use combat filter with using an item
   // use fax if that's what we're doing
   if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
     if(can_banish(_bounty(SPECIAL).location) ||
        (b.type == SPECIAL && !can_banish(_bounty(SPECIAL).location))) {
       faxbot(_bounty(b.type).monster);
-      use(1, $item[photocopied monster]);
+      use_combat($item[photocopied monster], "combat");
     }
   // use copy if that's what we're doing
   } else if(item_amount($item[Rain-Doh box full of monster]) > 0 &&
             to_monster(get_property("rainDohMonster")) == b.monster) {
-    use(1, $item[Rain-Doh box full of monster]);
+    use_combat($item[Rain-Doh box full of monster], "combat");
   } else if(item_amount($item[Spooky Putty monster]) > 0 &&
             to_monster(get_property("spookyPuttyMonster")) == b.monster) {
-    use(1, $item[Spooky Putty monster]);
+    use_combat($item[Spooky Putty monster], "combat");
   // if location is avilable or affordable, adventure
   } else if(can_adv(b.location, false) ||
             (b.type == SPECIAL &&
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
     current = b.type;
+    if(useBan) buy_banishers();
     adventure(1, b.location, "combat");
   } else {
     // turns out we're doing nothing
-    visit_bhh(); // refreshing because ??
+    print("Can't access the location of the bounty! Give up?", "orange");
+    if(giveup) cancel_bounty(b.type); // automatically give up if unaccessible
     return false;
   }
 
@@ -331,17 +357,18 @@ boolean hunt_bounty(string b) {
 //----------------------------------------
 // Combat Functions
 
-// TODO: Only items, needs skills
-monster[item] get_used_item_banishers() {
+// TODO: Consolidate using a record for banishers
+monster[item] get_used_item_banishers(location loc) {
   // Banished monster data is stored in the format by mafia:
   // monster1:item1:turn_used1:monster2:item2:turn_used2:etc...
+  // TODO/BUG: Sometimes this property isn't updated?
   string[int] banish_data = get_property("banishedMonsters").split_string(":");
 
   monster[item] list;
   for(int i = 1; i < banish_data.count(); i += 3) {
     monster m = to_monster(banish_data[i - 1]);
     int[monster] invert;
-    foreach id, em in get_monsters(_bounty(current).location) {
+    foreach id, em in get_monsters(loc) {
       invert[em] = id;
     }
     item it = to_item(banish_data[i]);
@@ -351,8 +378,8 @@ monster[item] get_used_item_banishers() {
   return list;
 }
 
-item get_unused_item_banisher() {
-  monster[item] used = get_used_item_banishers();
+item get_unused_item_banisher(location loc) {
+  monster[item] used = get_used_item_banishers(loc);
 
   foreach banisher in BAN_ITEMS {
     if(!(used contains banisher)) {
@@ -363,7 +390,7 @@ item get_unused_item_banisher() {
   return $item[none];
 }
 
-monster[skill] get_used_skill_banishers() {
+monster[skill] get_used_skill_banishers(location loc) {
   // Banished monster data is stored in the format by mafia:
   // monster1:item1:turn_used1:monster2:item2:turn_used2:etc...
   string[int] banish_data = get_property("banishedMonsters").split_string(":");
@@ -372,7 +399,7 @@ monster[skill] get_used_skill_banishers() {
   for(int i = 1; i < banish_data.count(); i += 3) {
     monster m = to_monster(banish_data[i - 1]);
     int[monster] invert;
-    foreach id, em in get_monsters(_bounty(current).location) {
+    foreach id, em in get_monsters(loc) {
       invert[em] = id;
     }
 
@@ -389,12 +416,16 @@ monster[skill] get_used_skill_banishers() {
   return list;
 }
 
-skill get_unused_skill_banisher() {
-  monster[skill] used = get_used_skill_banishers();
+skill get_unused_skill_banisher(location loc) {
+  monster[skill] used = get_used_skill_banishers(loc);
 
   foreach banisher in BAN_SKILLS {
     if(!(used contains banisher)) {
-      return banisher;
+      if(banisher != $skill[Snokebomb] ||
+         (banisher == $skill[Snokebomb] &&
+         get_property("_snokebombUsed").to_int() < 3)) {
+           return banisher;
+         }
     }
   }
 
@@ -410,6 +441,7 @@ skill get_unused_skill_banisher() {
 * @returns {boolean} - if the given monster is being hunted
 */
 string combat(int round, monster opp, string text) {
+  print(text);
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
     print("Hey it's the bounty monster!", "blue");
@@ -432,13 +464,13 @@ string combat(int round, monster opp, string text) {
     }
     // Ban logic
   } else if(useBan && can_banish(my_location())) {
-    skill skill_banisher = get_unused_skill_banisher();
+    skill skill_banisher = get_unused_skill_banisher(my_location());
     if(have_skill(skill_banisher)) {
       print("I have skill " + skill_banisher.to_string());
       return "skill " + to_string(skill_banisher);
     }
 
-    item item_banisher = get_unused_item_banisher();
+    item item_banisher = get_unused_item_banisher(my_location());
     if(item_amount(item_banisher) > 0) {
       return "item " + to_string(item_banisher);
     }
@@ -449,6 +481,11 @@ string combat(int round, monster opp, string text) {
   print("Using CCS!");
   // Default to CCS if custom actions can't happen
   return get_ccs_action(round);
+}
+
+string combat2(int round, monster opp, string text) {
+  print(text);
+  return "skill " + $skill[Snokebomb];
 }
 
 //----------------------------------------
