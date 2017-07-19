@@ -75,6 +75,14 @@ item[location] CONTENT_ITEMS = {
   $location[the Secret Government Laboratory] : $item[one-day ticket to Conspiracy Island]
 };
 
+// Banish Locations
+// TODO: incomplete?
+boolean[location] NO_BANISH_LOCATIONS = {
+  $location[Pirates of the Garbage Barges] : true,
+  $location[the Secret Government Laboratory] : true,
+  $location[Sloppy Seconds Diner] : true
+};
+
 //----------------------------------------
 // Private Bounty Functions
 
@@ -200,6 +208,10 @@ boolean buy_banishers() {
   return count > 0;
 }
 
+boolean can_banish(location l) {
+  return !(NO_BANISH_LOCATIONS contains l);
+}
+
 //----------------------------------------
 // BHH Functions
 
@@ -282,8 +294,11 @@ boolean hunt_bounty(bounty b) {
 
   // use fax if that's what we're doing
   if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
-    faxbot(_bounty(b.type).monster);
-    use(1, $item[photocopied monster]);
+    if(can_banish(_bounty(SPECIAL).location) ||
+       (b.type == SPECIAL && !can_banish(_bounty(SPECIAL).location))) {
+      faxbot(_bounty(b.type).monster);
+      use(1, $item[photocopied monster]);
+    }
   // use copy if that's what we're doing
   } else if(item_amount($item[Rain-Doh box full of monster]) > 0 &&
             to_monster(get_property("rainDohMonster")) == b.monster) {
@@ -323,13 +338,13 @@ monster[item] get_used_item_banishers() {
   string[int] banish_data = get_property("banishedMonsters").split_string(":");
 
   monster[item] list;
-  for(int i = 0; i < banish_data.count(); i += 3) {
-    monster m = to_monster(banish_data[i]);
+  for(int i = 1; i < banish_data.count(); i += 3) {
+    monster m = to_monster(banish_data[i - 1]);
     int[monster] invert;
     foreach id, em in get_monsters(_bounty(current).location) {
       invert[em] = id;
     }
-    item it = to_item(banish_data[i + 1]);
+    item it = to_item(banish_data[i]);
     if(invert contains m && it.combat) list[it] = m;
   }
 
@@ -354,13 +369,20 @@ monster[skill] get_used_skill_banishers() {
   string[int] banish_data = get_property("banishedMonsters").split_string(":");
 
   monster[skill] list;
-  for(int i = 0; i < banish_data.count(); i += 3) {
-    monster m = to_monster(banish_data[i]);
+  for(int i = 1; i < banish_data.count(); i += 3) {
+    monster m = to_monster(banish_data[i - 1]);
     int[monster] invert;
     foreach id, em in get_monsters(_bounty(current).location) {
       invert[em] = id;
     }
-    skill sk = to_skill(banish_data[i + 1]);
+
+    skill sk;
+    // Special case handling
+    if(banish_data[i] == "pantsgiving") {
+      sk = $skill[Talk About Politics];
+    } else {
+      sk = to_skill(banish_data[i]);
+    }
     if(invert contains m && sk.combat) list[sk] = m;
   }
 
@@ -390,6 +412,7 @@ skill get_unused_skill_banisher() {
 string combat(int round, monster opp, string text) {
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
+    print("Hey it's the bounty monster!", "blue");
     // Copy round 1 if can
     // current wouldn't be needed if there was a to_bounty(monster m),
     // maybe I'll make one
@@ -408,10 +431,11 @@ string combat(int round, monster opp, string text) {
       }
     }
     // Ban logic
-  } else if(useBan) {
+  } else if(useBan && can_banish(my_location())) {
     skill skill_banisher = get_unused_skill_banisher();
     if(have_skill(skill_banisher)) {
-      return "cast " + to_string(skill_banisher);
+      print("I have skill " + skill_banisher.to_string());
+      return "skill " + to_string(skill_banisher);
     }
 
     item item_banisher = get_unused_item_banisher();
@@ -422,6 +446,7 @@ string combat(int round, monster opp, string text) {
     // TODO: runaway logic
   }
 
+  print("Using CCS!");
   // Default to CCS if custom actions can't happen
   return get_ccs_action(round);
 }
@@ -434,10 +459,13 @@ void main(string params) {
   string doWhat = args[0];
   int arglen = count(args);
 
+  print(arglen);
+
   // Command handling
   switch(doWhat) {
     case 'hunt':
-      if(arglen > 2) {
+      if(arglen > 1) {
+        visit_bhh(); // refresh BHH status
         switch(args[1]) {
           // This will accept *ALL* easy/hard/special bounties
           // ie. if you have an easy from a previous day, it will do that one,
@@ -466,7 +494,10 @@ void main(string params) {
             }
             break;
           case 'all':
+            print("Hunting all bounties!");
             while(optimal_bounty() != $bounty[none]) {
+              print("You have " + _remaining(optimal_bounty().type).to_string() +
+                    " remaining!", "green");
               if(!hunt_bounty(optimal_bounty())) break;
             }
             break;
