@@ -279,7 +279,6 @@ boolean use_combat(item it, string filter) {
 * @returns {string} - the page text
 */
 string visit_bhh(string query) {
-  print("bounty.php?pwd"+query);
   string page = visit_url("bounty.php?pwd"+query);
   return page;
 }
@@ -376,6 +375,8 @@ bounty optimal_bounty() {
 */
 boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
+  print("There are " + _remaining(optimal_bounty().type).to_string() + " " +
+        b.plural + " remaining!", "green");
 
   // BUG: can't use combat filter with using an item
   // use fax if that's what we're doing
@@ -510,7 +511,6 @@ skill get_unused_skill_banisher(location loc) {
 * @returns {boolean} - if the given monster is being hunted
 */
 string combat(int round, monster opp, string text) {
-  print(text);
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
     print("Hey it's the bounty monster!", "blue");
@@ -547,7 +547,6 @@ string combat(int round, monster opp, string text) {
     // TODO: runaway logic
   }
 
-  print("Using CCS!");
   // Default to CCS if custom actions can't happen
   return get_ccs_action(round);
 }
@@ -560,8 +559,6 @@ void main(string params) {
   string doWhat = args[0];
   int arglen = count(args);
 
-  print(arglen);
-
   // Command handling
   switch(doWhat) {
     case 'hunt':
@@ -572,16 +569,19 @@ void main(string params) {
           // ie. if you have an easy from a previous day, it will do that one,
           // as well as the easy for the current day
           case 'easy':
+            print("Hunting easy bounty!", "blue");
             while(_bounty(EASY) != $bounty[none]) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
+            print("Hunting hard bounty!", "blue");
             while(_bounty(HARD) != $bounty[none]) {
               if(!hunt_bounty(_bounty(HARD))) break;
             }
             break;
           case 'special':
+            print("Hunting special bounty!", "blue");
             while(_bounty(SPECIAL) != $bounty[none]) {
               if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
@@ -589,16 +589,15 @@ void main(string params) {
           case 'optimal':
           case 'fastest':
           case 'best':
+            print("Hunting optimal bounty!", "blue");
             bounty b = optimal_bounty();
             while(_bounty(b.type) != $bounty[none]) {
               if(!hunt_bounty(b)) break;
             }
             break;
           case 'all':
-            print("Hunting all bounties!");
+            print("Hunting all bounties!", "blue");
             while(optimal_bounty() != $bounty[none]) {
-              print("You have " + _remaining(optimal_bounty().type).to_string() +
-                    " remaining!", "green");
               if(!hunt_bounty(optimal_bounty())) break;
             }
             break;
