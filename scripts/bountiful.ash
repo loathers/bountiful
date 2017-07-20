@@ -13,20 +13,25 @@ since r18000;
 import <canadv.ash>;
 
 /********************************
-Custom Properties Used:
- - bountiful.useBanisher
- - bountiful.useCopier
- - bountiful.useFax
- - bountiful.useRunaway
- - bountiful.maxBanishCost
- - bountiful.maxSpecialCost
- - bountiful.automaticallyGiveup
+Custom Properties and Defaults(* indicates unused):
+ - bountiful.useBanisher : false
+ - bountiful.useCopier : false
+ - bountiful.useFax : false
+ - bountiful.useRunaway* : false
+ - bountiful.maxBanishCost : autoBuyPriceLimit
+ - bountiful.maxSpecialCost : autoBuyPriceLimit
+ - bountiful.automaticallyGiveup : false
 ********************************/
+
+/*
+TODO:
+ - handle elemental airport properties bug
+ - reorder functions/general organization
+ - script information for third-party comprehension
+*/
 
 //----------------------------------------
 // Global Variables
-string current;
-int count;
 
 // Property Shorthands:
 //   Simply assigns property values to short variable names
@@ -35,7 +40,7 @@ boolean useCopier = get_property("bountiful.useCopier").to_boolean();
 boolean useFax = get_property("bountiful.useFax").to_boolean();
 boolean useRun = get_property("bountiful.useRunaway").to_boolean();
 int maxBanish = get_property("bountiful.maxBanishCost").to_int();
-  if(maxBanish == 0) maxBanish = 1000000000;
+  if(maxBanish == 0) maxBanish = get_property("autoBuyPriceLimit ").to_int();
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
   if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit ").to_int();
 boolean giveup = get_property("bountiful.automaticallyGiveup").to_boolean();
@@ -53,6 +58,7 @@ int[item] BAN_ITEMS = {
   $item[divine champagne popper] : 5
 };
 
+// TODO: add other skills (mostly IOTMs I don't have)
 boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,
   $skill[Talk About Politics] : true
@@ -77,8 +83,8 @@ item[location] CONTENT_ITEMS = {
   $location[the Secret Government Laboratory] : $item[one-day ticket to Conspiracy Island]
 };
 
-// Banish Locations
-// TODO: incomplete?
+// No Banish Locations
+// TODO: incomplete? a is_banishable() function/property would be great..
 boolean[location] NO_BANISH_LOCATIONS = {
   $location[Pirates of the Garbage Barges] : true,
   $location[the Secret Government Laboratory] : true,
@@ -88,6 +94,12 @@ boolean[location] NO_BANISH_LOCATIONS = {
 //----------------------------------------
 // Private Bounty Functions
 
+/**
+* Returns the current bounty item of the given type
+* @param {string} type - the bounty type
+* @returns {bounty} - the current bounty item of the given type, either taken
+                      or untaken
+*/
 bounty _bounty(string type) {
   bounty ret;
   switch(type) {
@@ -118,6 +130,11 @@ bounty _bounty(string type) {
   return $bounty[none];
 }
 
+/**
+* Returns if the bounty of the given type is currently taken
+* @param {string} type - the bounty type
+* @returns {int} - if the bounty of the given type is currently taken
+*/
 boolean _accepted(string type) {
   switch(type) {
     case EASY:
@@ -140,7 +157,7 @@ boolean _accepted(bounty b) {
 /**
 * Returns the number of bounty items acquired of the given type
 * @param {string} type - the bounty type
-* @returns {int} - Returns the bounty item count if the type is accepted, or
+* @returns {int} - the bounty item count if the type is accepted,
                    -1 if the given type is not currently accepted
 */
 int _count(string type) {
@@ -158,13 +175,19 @@ int _count(string type) {
         return prop[1].to_int();
       default:
         abort("_count: Invalid bounty type");
-      return -1;
+      return -666;
     }
   } else {
-    return -888;
+    return -1;
   }
 }
 
+/**
+* Returns the number of bounty items remaining of the given type
+* @param {string} type - the bounty type
+* @returns {int} - the bounty items remaining if the type is accepted,
+                   -1 if the given type is not currently accepted
+*/
 int _remaining(string type) {
   int count = _count(type);
   int total = _bounty(type).number;
@@ -179,7 +202,11 @@ int _remaining(string type) {
 //----------------------------------------
 // Helper Functions
 
-// cute logic to calculate copiers per day
+/**
+* Returns the number of copies available daily
+* @returns {int} - the number of copies available daily, does not subtract
+                   copies used that day
+*/
 int copies_available() {
   int copies = 0;
 
@@ -198,6 +225,10 @@ int copies_available() {
   return copies;
 }
 
+/**
+* Purchases banishes that are within budget
+* @returns {boolean} - if at least one banisher was purchased
+*/
 boolean buy_banishers() {
   int count = 0;
 
@@ -210,10 +241,21 @@ boolean buy_banishers() {
   return count > 0;
 }
 
+/**
+* Returns if the given location allows banishing
+* @param {location} l - the location to check
+* @returns {boolean} - true if the location allows banishing
+*/
 boolean can_banish(location l) {
   return !(NO_BANISH_LOCATIONS contains l);
 }
 
+/**
+* Uses an item with the given combat filter, like use() but with combat filters
+* @param {item} it - the item to use
+* @param {string} filter - the combat filter to use
+* @returns {boolean} - true if the item was used successfully
+*/
 boolean use_combat(item it, string filter) {
   string page = visit_url("inv_use.php?&pwd&which=3&checked=1&whichitem=" + it.to_int());
 
@@ -247,13 +289,17 @@ string visit_bhh() {
   return visit_bhh("");
 }
 
+/**
+* Accepts the bounty of the given type
+* @param {string} type - the bounty type
+* @returns {boolean} - false if the given bounty is already accepted
+*/
 boolean accept_bounty(string type) {
   if(_accepted(type)) {
     return false;
   }
 
-  string query = "&action=take"+_bounty(type).kol_internal_type;
-  visit_bhh(query);
+  visit_bhh("&action=take"+_bounty(type).kol_internal_type);
   visit_bhh();
   return true;
 }
@@ -263,20 +309,19 @@ boolean accept_bounty(bounty b) {
   return accept_bounty(b.type);
 }
 
+/**
+* Cancels the bounty of the given type
+* @param {string} type - the bounty type
+* @returns {boolean} - false if the given bounty is not already accepted
+*/
 boolean cancel_bounty(string type) {
+  if(!_accepted(type)) {
+    return false;
+  }
+
   visit_bhh("&action=giveup_"+substring(_bounty(type).kol_internal_type, 0, 3));
   visit_bhh();
   return true;
-}
-
-// TODO
-void print_current() {
-
-}
-
-// TODO
-void print_available() {
-
 }
 
 /**
@@ -296,6 +341,11 @@ boolean is_hunted(string opp) {
   return is_hunted(to_monster(opp));
 }
 
+/**
+* Returns the bounty with the smallest item count
+* @returns {bounty} - the bounty with the smallest item count,
+                      $bounty[none] if no bounties are available/active
+*/
 bounty optimal_bounty() {
   bounty[int] bounty_counts;
   bounty_counts[_bounty(EASY).number] = _bounty(EASY);
@@ -312,31 +362,44 @@ bounty optimal_bounty() {
   return bounty_counts[min];
 }
 
+/**
+* Attempts to hunt the given bounty based on current settings and state:
+*  - Will fax if bountiful.useFax is true and a fax is available
+*  - Will use a copy if bountiful.useCopier is true and a copy is available
+*  - Will adventure at a special content-unlockable location if the unlock
+*    item costs less than or equal to bountiful.maxSpecialCost or the zone is
+*    available
+*  - Will adventure at a normal location if it is available
+*  - Will give up a bounty if inaccessible and bountiful.automaticallyGiveup is true
+* @param {bounty} b - the bounty to hunt
+* @returns {boolean} - false if the bounty could not be hunted
+*/
 boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
 
   // BUG: can't use combat filter with using an item
   // use fax if that's what we're doing
+  // TODO: Fax logic for doable inaccessible bounties
   if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
     if(can_banish(_bounty(SPECIAL).location) ||
        (b.type == SPECIAL && !can_banish(_bounty(SPECIAL).location))) {
       faxbot(_bounty(b.type).monster);
       use_combat($item[photocopied monster], "combat");
     }
-  // use copy if that's what we're doing
-  } else if(item_amount($item[Rain-Doh box full of monster]) > 0 &&
+  // use copy if that's what we're doing and a copy is avilable
+  } else if(useCopier && item_amount($item[Rain-Doh box full of monster]) > 0 &&
             to_monster(get_property("rainDohMonster")) == b.monster) {
     use_combat($item[Rain-Doh box full of monster], "combat");
-  } else if(item_amount($item[Spooky Putty monster]) > 0 &&
+  } else if(useCopier && item_amount($item[Spooky Putty monster]) > 0 &&
             to_monster(get_property("spookyPuttyMonster")) == b.monster) {
     use_combat($item[Spooky Putty monster], "combat");
-  // if location is avilable or affordable, adventure
+  // if location is avilable or affordable, adventure there
   } else if(can_adv(b.location, false) ||
             (b.type == SPECIAL &&
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
     current = b.type;
     if(useBan) buy_banishers();
-    adventure(1, b.location, "combat");
+    adventure(1, b.location, "combat"); // automatically buys and uses content unlocker
   } else {
     // turns out we're doing nothing
     print("Can't access the location of the bounty! Give up?", "orange");
@@ -433,8 +496,14 @@ skill get_unused_skill_banisher(location loc) {
 }
 
 /**
-* Custom action filter, see here:
-*   http://wiki.kolmafia.us/index.php?title=Adventure
+* Custom action filter, see here: http://wiki.kolmafia.us/index.php?title=Adventure
+* Behavior includes:
+*  - Copying bounty targets if bountiful.useCopier is true
+*  - Banishing non-bounty targets if bountiful.useBanisher is true and the monster
+*    is banishable
+*  - (Unimplemented) free runaway from non-bounty targets if bountiful.useRunaway
+*    is true
+*  - Does CCS action otherwise
 * @param {int} round   - the current combat round
 * @param {monster} opp - the current enemy monster
 * @param {string} text - the current page text
@@ -448,7 +517,7 @@ string combat(int round, monster opp, string text) {
     // Copy round 1 if can
     // current wouldn't be needed if there was a to_bounty(monster m),
     // maybe I'll make one
-    if(useCopier && (round == 0) && (_remaining(current) > 1)) {
+    if(useCopier && (round == 0) && (_remaining(my_location().bounty) > 1)) {
       int doh_copies = get_property("_raindohCopiesMade").to_int();
       int putty_copies = get_property("spookyPuttyCopiesMade").to_int();
 
@@ -481,11 +550,6 @@ string combat(int round, monster opp, string text) {
   print("Using CCS!");
   // Default to CCS if custom actions can't happen
   return get_ccs_action(round);
-}
-
-string combat2(int round, monster opp, string text) {
-  print(text);
-  return "skill " + $skill[Snokebomb];
 }
 
 //----------------------------------------
@@ -544,10 +608,6 @@ void main(string params) {
       } else {
         print("No bounty type given!", "red");
       }
-      break;
-    case 'list':
-      print_current();
-      print_available();
       break;
     default:
       print("Invalid command!", "red");
