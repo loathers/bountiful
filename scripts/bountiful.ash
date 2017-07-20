@@ -1,6 +1,6 @@
 /******************************************************************************
 * Bountiful by RESPRiT
-* Version 0.2
+* Version 0.3
 * https://github.com/RESPRiT
 *
 * Adapted from AutoBHH:
@@ -13,11 +13,12 @@ since r18000;
 import <canadv.ash>;
 
 /********************************
-Custom Properties and Defaults(* indicates unused):
+Custom Properties and Default Values (* indicates unused):
  - bountiful.useBanisher : false
  - bountiful.useCopier : false
  - bountiful.useFax : false
  - bountiful.useRunaway* : false
+ - bountiful.useFreeKill : false
  - bountiful.maxBanishCost : autoBuyPriceLimit
  - bountiful.maxSpecialCost : autoBuyPriceLimit
  - bountiful.automaticallyGiveup : false
@@ -28,24 +29,30 @@ TODO:
  - handle elemental airport properties bug
  - reorder functions/general organization
  - script information for third-party comprehension
+ - runaway logic
 */
 
 //----------------------------------------
 // Global Variables
+item LAST_BANISH; // for debugging/preventing a mafia bug from breaking things
+location LAST_LOCATION;
 
-// Property Shorthands:
-//   Simply assigns property values to short variable names
+//----------------------------------------
+// Constant Variables
+
+// Properties
 boolean useBan = get_property("bountiful.useBanisher").to_boolean();
 boolean useCopier = get_property("bountiful.useCopier").to_boolean();
 boolean useFax = get_property("bountiful.useFax").to_boolean();
 boolean useRun = get_property("bountiful.useRunaway").to_boolean();
+boolean useKill = get_property("bountiful.useFreeKill").to_boolean();
 int maxBanish = get_property("bountiful.maxBanishCost").to_int();
   if(maxBanish == 0) maxBanish = get_property("autoBuyPriceLimit ").to_int();
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
   if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit ").to_int();
 boolean giveup = get_property("bountiful.automaticallyGiveup").to_boolean();
 
-// Constants
+// Types
 string EASY = "easy";
 string HARD = "hard";
 string SPECIAL = "special";
@@ -60,8 +67,8 @@ int[item] BAN_ITEMS = {
 
 // TODO: add other skills (mostly IOTMs I don't have)
 boolean[skill] BAN_SKILLS = {
-  $skill[Snokebomb] : true,
-  $skill[Talk About Politics] : true
+  $skill[Snokebomb] : true,           // Snojo
+  $skill[Talk About Politics] : true  // Pantsgiving
 };
 
 // Unlockers
@@ -83,7 +90,7 @@ item[location] CONTENT_ITEMS = {
   $location[the Secret Government Laboratory] : $item[one-day ticket to Conspiracy Island]
 };
 
-// No Banish Locations
+// "No Banish" Locations
 // TODO: incomplete? a is_banishable() function/property would be great..
 boolean[location] NO_BANISH_LOCATIONS = {
   $location[Pirates of the Garbage Barges] : true,
@@ -144,7 +151,7 @@ boolean _accepted(string type) {
     case SPECIAL:
       return get_property("currentSpecialBountyItem") != "";
     default:
-      abort("_accepted: Invalid bounty type");
+      abort("_accepted: Invalid bounty type - " + type);
   }
   return false;
 }
@@ -197,6 +204,11 @@ int _remaining(string type) {
   } else {
     return count;
   }
+}
+
+// @Overload
+int _remaining(bounty b) {
+  return _remaining(b.type);
 }
 
 //----------------------------------------
@@ -398,8 +410,14 @@ boolean hunt_bounty(bounty b) {
   } else if(can_adv(b.location, false) ||
             (b.type == SPECIAL &&
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
-    current = b.type;
-    if(useBan) buy_banishers();
+    if(useBan)
+      buy_banishers();
+
+    // unlock special zone if currently not available
+    if(b.type == SPECIAL &&
+       0 == have_effect(effect_modifier(CONTENT_ITEMS[b.location], "Effect")))
+      use(1, CONTENT_ITEMS[b.location]);
+
     adventure(1, b.location, "combat"); // automatically buys and uses content unlocker
   } else {
     // turns out we're doing nothing
@@ -514,9 +532,7 @@ string combat(int round, monster opp, string text) {
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
     print("Hey it's the bounty monster!", "blue");
-    // Copy round 1 if can
-    // current wouldn't be needed if there was a to_bounty(monster m),
-    // maybe I'll make one
+    // Copy at the beginning of the fight if possible
     if(useCopier && (round == 0) && (_remaining(my_location().bounty) > 1)) {
       int doh_copies = get_property("_raindohCopiesMade").to_int();
       int putty_copies = get_property("spookyPuttyCopiesMade").to_int();
@@ -530,9 +546,14 @@ string combat(int round, monster opp, string text) {
           return "item Spooky Putty sheet";
         }
       }
+    // Free kill if we're doing that
+    } else if(useKill && item_amount($item[Power pill]) > 1 &&
+              get_property(_powerPillUses).to_int() < 20) {
+      return "item power pill";
     }
     // Ban logic
   } else if(useBan && can_banish(my_location())) {
+    // Prefer skill banishes over items (they're free)
     skill skill_banisher = get_unused_skill_banisher(my_location());
     if(have_skill(skill_banisher)) {
       print("I have skill " + skill_banisher.to_string());
@@ -540,14 +561,25 @@ string combat(int round, monster opp, string text) {
     }
 
     item item_banisher = get_unused_item_banisher(my_location());
+
+    // This should never happen but Mafia seems to occasionally not keep track
+    // of banishes for some reason - TODO: Figure this out
+    if(LAST_BANISH == item_banisher && LAST_LOCATION = my_location()) {
+      abort("Script picked the same banisher twice in a row for the same location!");
+    }
+
     if(item_amount(item_banisher) > 0) {
+      // For debugging: see above comment
+      LAST_BANISH = item_banisher;
+      LAST_LOCATION = my_location();
+
       return "item " + to_string(item_banisher);
     }
-  } else if(useRun) {
+  } // else if(useRun) {
     // TODO: runaway logic
-  }
+    // }
 
-  // Default to CCS if custom actions can't happen
+  // Default to CCS if custom actions can't/don't need to happen
   return get_ccs_action(round);
 }
 
