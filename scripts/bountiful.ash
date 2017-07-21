@@ -30,6 +30,8 @@ TODO:
  - reorder functions/general organization
  - script information for third-party comprehension
  - runaway logic
+ - add olfaction
+ - romantic arrow support
 */
 
 //----------------------------------------
