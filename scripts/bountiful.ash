@@ -39,6 +39,8 @@ TODO:
 item LAST_BANISH; // for debugging/preventing a mafia bug from breaking things
 location LAST_LOCATION;
 
+bounty current;
+
 //----------------------------------------
 // Constant Variables
 
@@ -391,9 +393,8 @@ boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
   print("There are " + _remaining(optimal_bounty().type).to_string() + " " +
         b.plural + " remaining!", "green");
+  current = b;
 
-  // BUG: can't use combat filter with using an item
-  // use fax if that's what we're doing
   // TODO: Fax logic for doable inaccessible bounties
   if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
     if(can_banish(_bounty(SPECIAL).location) ||
@@ -408,7 +409,7 @@ boolean hunt_bounty(bounty b) {
   } else if(useCopier && item_amount($item[Spooky Putty monster]) > 0 &&
             to_monster(get_property("spookyPuttyMonster")) == b.monster) {
     use_combat($item[Spooky Putty monster], "combat");
-  // if location is avilable or affordable, adventure there
+  // if location is available or affordable, adventure there
   } else if(can_adv(b.location, false) ||
             (b.type == SPECIAL &&
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
@@ -416,11 +417,14 @@ boolean hunt_bounty(bounty b) {
       buy_banishers();
 
     // unlock special zone if currently not available
-    if(b.type == SPECIAL &&
-       0 == have_effect(effect_modifier(CONTENT_ITEMS[b.location], "Effect")))
-      use(1, CONTENT_ITEMS[b.location]);
+    if(!can_adv(b.location, false))
+      buy(1, CONTENT_ITEMS[b.location], maxSpecial);
 
-    adventure(1, b.location, "combat"); // automatically buys and uses content unlocker
+    // prepare zone and check accessibility
+    if(!can_adv(b.location, true))
+      abort("Couldn't prepare the zone for some reason");
+
+    adventure(1, b.location, "combat");
   } else {
     // turns out we're doing nothing
     print("Can't access the location of the bounty! Give up?", "orange");
@@ -535,7 +539,8 @@ string combat(int round, monster opp, string text) {
   if(is_hunted(opp)) {
     print("Hey it's the bounty monster!", "blue");
     // Copy at the beginning of the fight if possible
-    if(useCopier && (round == 0) && (_remaining(my_location().bounty) > 1)) {
+    // TODO: Fix my_location() not working with copies (putty, etc)
+    if(useCopier && (round == 0) && (_remaining(current) > 1)) {
       int doh_copies = get_property("_raindohCopiesMade").to_int();
       int putty_copies = get_property("spookyPuttyCopiesMade").to_int();
 
@@ -550,7 +555,7 @@ string combat(int round, monster opp, string text) {
       }
     // Free kill if we're doing that
     } else if(useKill && item_amount($item[Power pill]) > 1 &&
-              get_property(_powerPillUses).to_int() < 20) {
+              get_property("_powerPillUses").to_int() < 20) {
       return "item power pill";
     }
     // Ban logic
@@ -566,8 +571,9 @@ string combat(int round, monster opp, string text) {
 
     // This should never happen but Mafia seems to occasionally not keep track
     // of banishes for some reason - TODO: Figure this out
-    if(LAST_BANISH == item_banisher && LAST_LOCATION = my_location()) {
-      abort("Script picked the same banisher twice in a row for the same location!");
+    if(LAST_BANISH == item_banisher && LAST_LOCATION == my_location()) {
+      abort("Script picked the same banisher (" + LAST_BANISH.to_string() +
+            ") twice in a row for the same location (" + LAST_LOCATION.to_string() + ")");
     }
 
     if(item_amount(item_banisher) > 0) {
