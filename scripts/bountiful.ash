@@ -52,9 +52,9 @@ boolean useFax = get_property("bountiful.useFax").to_boolean();
 boolean useRun = get_property("bountiful.useRunaway").to_boolean();
 boolean useKill = get_property("bountiful.useFreeKill").to_boolean();
 int maxBanish = get_property("bountiful.maxBanishCost").to_int();
-  if(maxBanish == 0) maxBanish = get_property("autoBuyPriceLimit ").to_int();
+if(maxBanish == 0) maxBanish = get_property("autoBuyPriceLimit").to_int();
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
-  if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit ").to_int();
+if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit").to_int();
 boolean giveup = get_property("bountiful.automaticallyGiveup").to_boolean();
 
 // Types
