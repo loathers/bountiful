@@ -21,6 +21,7 @@ Custom Properties and Default Values (* indicates unused):
  - bountiful.useFreeKill : false
  - bountiful.maxBanishCost : autoBuyPriceLimit
  - bountiful.maxSpecialCost : autoBuyPriceLimit
+ - bountiful.maxRunawayCost : autoBuyPriceLimit
  - bountiful.automaticallyGiveup : false
 ********************************/
 
@@ -571,10 +572,13 @@ string combat(int round, monster opp, string text) {
 
     // This should never happen but Mafia seems to occasionally not keep track
     // of banishes for some reason - TODO: Figure this out
+    // BUG: This debugging code introduces a bug...
+    /*
     if(LAST_BANISH == item_banisher && LAST_LOCATION == my_location()) {
       abort("Script picked the same banisher (" + LAST_BANISH.to_string() +
             ") twice in a row for the same location (" + LAST_LOCATION.to_string() + ")");
     }
+    */
 
     if(item_amount(item_banisher) > 0) {
       // For debugging: see above comment
@@ -583,9 +587,18 @@ string combat(int round, monster opp, string text) {
 
       return "item " + to_string(item_banisher);
     }
-  } // else if(useRun) {
-    // TODO: runaway logic
-    // }
+  } else if(useRun) {
+    // Use familiar run away
+    if(my_familiar() == $familiar[Pair of Stomping Boots] ||
+       (my_familiar() == $familiar[Frumious Bandersnatch] &&
+        have_effect($effect[Ode to Booze]) > 0)) {
+
+      // Yucky nested if statement
+      if(get_property("_banderRunaways").to_int() < round(numeric_modifier("Familiar Weight")) / 5) {
+        return "run away";
+      }
+    }
+  }
 
   // Default to CCS if custom actions can't/don't need to happen
   return get_ccs_action(round);
