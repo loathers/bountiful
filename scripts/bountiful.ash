@@ -73,7 +73,8 @@ int[item] BAN_ITEMS = {
 // TODO: add other skills (mostly IOTMs I don't have)
 boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,           // Snojo
-  $skill[Talk About Politics] : true  // Pantsgiving
+  $skill[Talk About Politics] : true,  // Pantsgiving
+  $skill[Bowl a Curveball] : true
 };
 
 // Unlockers
@@ -392,7 +393,7 @@ bounty optimal_bounty() {
 */
 boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
-  print("There are " + _remaining(optimal_bounty().type).to_string() + " " +
+  print("There are " + _remaining(b.type).to_string() + " " +
         b.plural + " remaining!", "green");
   current = b;
 
@@ -539,6 +540,14 @@ string combat(int round, monster opp, string text) {
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
     print("Hey it's the bounty monster!", "blue");
+
+    // olfact if haven't already for bounty monster. Save 1 olfact for farming purposes
+    monster olfactedMonster = get_property("olfactedMonster").to_monster();
+    if(olfactedMonster != opp && get_property("_olfactionsUsed").to_int() < 2)
+    {
+      print("Sniffing this one!", "blue");
+      return "skill Transcendent Olfaction";
+    }
     // Copy at the beginning of the fight if possible
     // TODO: Fix my_location() not working with copies (putty, etc)
     if(useCopier && (round == 0) && (_remaining(current) > 1)) {
@@ -600,8 +609,9 @@ string combat(int round, monster opp, string text) {
     }
   }
 
+  print("Simply attacking");
   // Default to CCS if custom actions can't/don't need to happen
-  return get_ccs_action(round);
+  return "attack";
 }
 
 //----------------------------------------
