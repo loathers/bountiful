@@ -288,6 +288,46 @@ boolean use_combat(item it, string filter) {
   return true;
 }
 
+/**
+* Helper function to add additional copies of the bounty monster to the queue
+* @param {monster} opp - the current enemy monster
+* @returns {string} - combat action if an action can be taken, otherwise empty ""
+*/
+string addBountyToQueue(monster opp) {
+
+  // confirm we can survive 5 rounds
+  if((expected_damage(opp) * 5) > my_hp()) {
+    // can't survive, focus on killing
+    return "";
+  }
+
+  // Transcendent Olfaction. Save 1 olfact for farming purposes
+  monster olfactedMonster = get_property("olfactedMonster").to_monster();
+  if(olfactedMonster != opp && get_property("_olfactionsUsed").to_int() < 2)
+  {
+    print("Sniffing this one!", "blue");
+    return "skill Transcendent Olfaction";
+  }
+
+  // Gallapagosian Mating Call
+  monster gallapagosMonster = get_property("_gallapagosMonster").to_monster();
+  if(gallapagosMonster != opp && have_skill($skill[Gallapagosian Mating Call]))
+  {
+    print("Mating call on this one!", "blue");
+    return "skill Gallapagosian Mating Call";
+  }
+
+  // Get a Good Whiff of This Guy
+  monster nosyNoseMonster = get_property("nosyNoseMonster").to_monster();
+  if(nosyNoseMonster != opp && have_skill($skill[Get a Good Whiff of This Guy]))
+  {
+    print("Nosy Nose smelling this one!", "blue");
+    return "skill Get a Good Whiff of This Guy";
+  }
+
+  return "";
+}
+
 //----------------------------------------
 // BHH Functions
 
@@ -418,6 +458,10 @@ boolean hunt_bounty(bounty b) {
     if(useBan)
       buy_banishers();
 
+    // use Nosy Nose to add copies of bounty to the queue
+    if(have_familiar($familiar[Nosy Nose]) && my_familiar() != $familiar[Nosy Nose])
+      use_familiar($familiar[Nosy Nose]);
+
     // unlock special zone if currently not available
     if(!can_adv(b.location, false))
       buy(1, CONTENT_ITEMS[b.location], maxSpecial);
@@ -541,13 +585,11 @@ string combat(int round, monster opp, string text) {
   if(is_hunted(opp)) {
     print("Hey it's the bounty monster!", "blue");
 
-    // olfact if haven't already for bounty monster. Save 1 olfact for farming purposes
-    monster olfactedMonster = get_property("olfactedMonster").to_monster();
-    if(olfactedMonster != opp && get_property("_olfactionsUsed").to_int() < 2)
-    {
-      print("Sniffing this one!", "blue");
-      return "skill Transcendent Olfaction";
+    // add more copies of the bounty to the combat queue
+    if(addBountyToQueue(opp) != "") {
+      return addBountyToQueue(opp);
     }
+    
     // Copy at the beginning of the fight if possible
     // TODO: Fix my_location() not working with copies (putty, etc)
     if(useCopier && (round == 0) && (_remaining(current) > 1)) {
