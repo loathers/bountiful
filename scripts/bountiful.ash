@@ -1,15 +1,14 @@
 /******************************************************************************
-* Bountiful by RESPRiT
-* Version 0.3
-* https://github.com/RESPRiT
+* Bountiful by loathers
+* https://github.com/loathers
 *
-* Adapted from AutoBHH:
-* -Originally by izchak
-* -Major revisions by Raorn and Zarqon
+* Forked from RESPRiT
+* -Which was adapted from AutoBHH:
+*  -Originally by izchak
+*  -Major revisions by Raorn and Zarqon
 ******************************************************************************/
 script "Bountiful";
-notify tamedtheturtle;
-since r18000;
+since r26686;
 import <canadv.ash>;
 
 /********************************
