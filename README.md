@@ -6,7 +6,7 @@
 
 To install this script in KolMafia, simply use the following command in the gCLI:
 
-`svn checkout https://github.com/RESPRiT/bountiful/branches/release`
+`git checkout loathers/bountiful`
 
 ## Configuration
 
@@ -47,6 +47,6 @@ This script is still in the "beta" stages and has been tested but not thoroughly
 
 The code is documented using JavaDoc/JSDoc style comments if you are interested in taking a peek at the source code.
 
-This script is adapted (but very different) from AutoBHH, originally by izchak and majorly revised by Raorn and Zarqon.
+This script is forked from RESPRiT (https://github.com/RESPRiT/bountiful). Which was adapted (but very different) from AutoBHH, originally by izchak and majorly revised by Raorn and Zarqon. Thank you all for your contributions to this script.
 
 Feel free to provide feedback of any kind!
