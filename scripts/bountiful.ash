@@ -8,7 +8,7 @@
 *  -Major revisions by Raorn and Zarqon
 ******************************************************************************/
 script "Bountiful";
-since r26686;
+since r26691;
 import <canadv.ash>;
 
 /********************************
