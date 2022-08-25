@@ -21,6 +21,7 @@ bountiful.useFreeKill         | false             | Whether or not to kill the b
 bountiful.maxBanishCost       | autoBuyPriceLimit | Maximum price willing to spend on individual banishers
 bountiful.maxSpecialCost      | autoBuyPriceLimit | Maximum price willing to spend on special bounty content unlockers
 bountiful.automaticallyGiveup | false             | Whether or not to "Give up" bounties which cannot be accessed
+bountiful.useAllOlfactCharges | false             | Whether or not to use all 3 olfaction charges. Uses up to 2 when false 
 
 To set a property, simply type the following into the gCLI:
 

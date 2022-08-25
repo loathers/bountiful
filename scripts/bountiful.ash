@@ -9,7 +9,6 @@
 ******************************************************************************/
 script "Bountiful";
 since r26691;
-import <canadv.ash>;
 
 /********************************
 Custom Properties and Default Values (* indicates unused):
@@ -22,6 +21,7 @@ Custom Properties and Default Values (* indicates unused):
  - bountiful.maxSpecialCost : autoBuyPriceLimit
  - bountiful.maxRunawayCost : autoBuyPriceLimit
  - bountiful.automaticallyGiveup : false
+ - bountiful.useAllOlfactCharges : false
 ********************************/
 
 /*
@@ -30,7 +30,6 @@ TODO:
  - reorder functions/general organization
  - script information for third-party comprehension
  - runaway logic
- - add olfaction
  - romantic arrow support
 */
 
@@ -55,6 +54,7 @@ if(maxBanish == 0) maxBanish = get_property("autoBuyPriceLimit").to_int();
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
 if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit").to_int();
 boolean giveup = get_property("bountiful.automaticallyGiveup").to_boolean();
+boolean useAllOlfactCharges = get_property("bountiful.useAllOlfactCharges").to_boolean();
 
 // Types
 string EASY = "easy";
@@ -301,9 +301,10 @@ string addBountyToQueue(monster opp, boolean speculate) {
     return "";
   }
 
-  // Transcendent Olfaction. Save 1 olfact for farming purposes
+  // Transcendent Olfaction. Save 1 olfact for farming purposes, depending on pref
+  int olfactsToUse = useAllOlfactCharges ? 3 : 2;
   monster olfactedMonster = get_property("olfactedMonster").to_monster();
-  if(olfactedMonster != opp && get_property("_olfactionsUsed").to_int() < 2)
+  if(olfactedMonster != opp && get_property("_olfactionsUsed").to_int() < olfactsToUse)
   {
     if(!speculate) print("Sniffing this one!", "blue");
     return "skill Transcendent Olfaction";
@@ -452,7 +453,7 @@ boolean hunt_bounty(bounty b) {
             to_monster(get_property("spookyPuttyMonster")) == b.monster) {
     use_combat($item[Spooky Putty monster], "combat");
   // if location is available or affordable, adventure there
-  } else if(can_adv(b.location, false) ||
+  } else if(can_adventure(b.location) ||
             (b.type == SPECIAL &&
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
     if(useBan)
@@ -463,11 +464,16 @@ boolean hunt_bounty(bounty b) {
       use_familiar($familiar[Nosy Nose]);
 
     // unlock special zone if currently not available
-    if(!can_adv(b.location, false))
-      buy(1, CONTENT_ITEMS[b.location], maxSpecial);
+    if(!can_adventure(b.location)) {
+      print("Mafia determined we can't adv at " + b.location, "blue");
+      print("Attempting to unlock.", "blue");
+      if(item_amount(CONTENT_ITEMS[b.location]) < 1)
+        buy(1, CONTENT_ITEMS[b.location], maxSpecial);
+      use(1, CONTENT_ITEMS[b.location]);
+    }
 
     // prepare zone and check accessibility
-    if(!can_adv(b.location, true))
+    if(!can_adventure(b.location))
       abort("Couldn't prepare the zone for some reason");
 
     adventure(1, b.location, "combat");
@@ -583,7 +589,7 @@ skill get_unused_skill_banisher(location loc) {
 string combat(int round, monster opp, string text) {
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
-    if(round == 1) print("Hey it's the bounty monster!", "blue");
+    if(round == 0) print("Hey it's the bounty monster!", "blue");
 
     // add more copies of the bounty to the combat queue
     if(addBountyToQueue(opp, true) != "") {
