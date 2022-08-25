@@ -21,7 +21,7 @@ bountiful.useFreeKill         | false             | Whether or not to kill the b
 bountiful.maxBanishCost       | autoBuyPriceLimit | Maximum price willing to spend on individual banishers
 bountiful.maxSpecialCost      | autoBuyPriceLimit | Maximum price willing to spend on special bounty content unlockers
 bountiful.automaticallyGiveup | false             | Whether or not to "Give up" bounties which cannot be accessed
-bountiful.useAllOlfactCharges | false             | Whether or not to use all 3 olfaction charges. Uses up to 2 when false 
+bountiful.useAllOlfactCharges | false             | If false, reserves 1 olfact charge for the user to use later in their KOL day 	(for farming or in-run use). If true, uses all 3 of your daily olfactions on bounty hunting. Note that if you have olfaction, this script will always use up to 2 charges regardless.
 
 To set a property, simply type the following into the gCLI:
 
