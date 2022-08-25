@@ -304,7 +304,7 @@ string addBountyToQueue(monster opp, boolean speculate) {
   // Transcendent Olfaction. Save 1 olfact for farming purposes, depending on pref
   int olfactsToUse = useAllOlfactCharges ? 3 : 2;
   monster olfactedMonster = get_property("olfactedMonster").to_monster();
-  if(olfactedMonster != opp && get_property("_olfactionsUsed").to_int() < olfactsToUse)
+  if(olfactedMonster != opp && have_skill($skill[Transcendent Olfaction]) && get_property("_olfactionsUsed").to_int() < olfactsToUse)
   {
     if(!speculate) print("Sniffing this one!", "blue");
     return "skill Transcendent Olfaction";
