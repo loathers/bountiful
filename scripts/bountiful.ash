@@ -63,6 +63,9 @@ string SPECIAL = "special";
 
 // Banishers
 int[item] BAN_ITEMS = {
+  $item[Tryptophan dart] : 1000,
+  $item[Human musk] : 1000,
+  $item[Daily Affirmation: Be a Mind Master] : 80,
   $item[Louder Than Bomb] : 20,
   $item[crystal skull] : 20,
   $item[tennis ball] : 20,
