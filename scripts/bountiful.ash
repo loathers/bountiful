@@ -9,7 +9,6 @@
 ******************************************************************************/
 script "Bountiful";
 since r26691;
-import <canadv.ash>;
 
 /********************************
 Custom Properties and Default Values (* indicates unused):
@@ -22,6 +21,7 @@ Custom Properties and Default Values (* indicates unused):
  - bountiful.maxSpecialCost : autoBuyPriceLimit
  - bountiful.maxRunawayCost : autoBuyPriceLimit
  - bountiful.automaticallyGiveup : false
+ - bountiful.useAllOlfactCharges : false
 ********************************/
 
 /*
@@ -30,7 +30,6 @@ TODO:
  - reorder functions/general organization
  - script information for third-party comprehension
  - runaway logic
- - add olfaction
  - romantic arrow support
 */
 
@@ -55,6 +54,7 @@ if(maxBanish == 0) maxBanish = get_property("autoBuyPriceLimit").to_int();
 int maxSpecial = get_property("bountiful.maxSpecialCost").to_int();
 if(maxSpecial == 0) maxSpecial = get_property("autoBuyPriceLimit").to_int();
 boolean giveup = get_property("bountiful.automaticallyGiveup").to_boolean();
+boolean useAllOlfactCharges = get_property("bountiful.useAllOlfactCharges").to_boolean();
 
 // Types
 string EASY = "easy";
@@ -72,7 +72,8 @@ int[item] BAN_ITEMS = {
 // TODO: add other skills (mostly IOTMs I don't have)
 boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,           // Snojo
-  $skill[Talk About Politics] : true  // Pantsgiving
+  $skill[Talk About Politics] : true,  // Pantsgiving
+  $skill[Bowl a Curveball] : true
 };
 
 // Unlockers
@@ -286,6 +287,48 @@ boolean use_combat(item it, string filter) {
   return true;
 }
 
+/**
+* Helper function to add additional copies of the bounty monster to the queue
+* @param {monster} opp - the current enemy monster
+* @param {boolean} speculate - only notifies user of skill being used when false
+* @returns {string} - combat action if an action can be taken, otherwise empty ""
+*/
+string addBountyToQueue(monster opp, boolean speculate) {
+
+  // confirm we can survive 5 rounds
+  if((expected_damage(opp) * 5) > my_hp()) {
+    // can't survive, focus on killing
+    return "";
+  }
+
+  // Transcendent Olfaction. Save 1 olfact for farming purposes, depending on pref
+  int olfactsToUse = useAllOlfactCharges ? 3 : 2;
+  monster olfactedMonster = get_property("olfactedMonster").to_monster();
+  if(olfactedMonster != opp && have_skill($skill[Transcendent Olfaction]) && get_property("_olfactionsUsed").to_int() < olfactsToUse)
+  {
+    if(!speculate) print("Sniffing this one!", "blue");
+    return "skill Transcendent Olfaction";
+  }
+
+  // Gallapagosian Mating Call
+  monster gallapagosMonster = get_property("_gallapagosMonster").to_monster();
+  if(gallapagosMonster != opp && have_skill($skill[Gallapagosian Mating Call]))
+  {
+    if(!speculate) print("Mating call on this one!", "blue");
+    return "skill Gallapagosian Mating Call";
+  }
+
+  // Get a Good Whiff of This Guy
+  monster nosyNoseMonster = get_property("nosyNoseMonster").to_monster();
+  if(nosyNoseMonster != opp && have_skill($skill[Get a Good Whiff of This Guy]))
+  {
+    if(!speculate) print("Nosy Nose smelling this one!", "blue");
+    return "skill Get a Good Whiff of This Guy";
+  }
+
+  return "";
+}
+
 //----------------------------------------
 // BHH Functions
 
@@ -391,7 +434,7 @@ bounty optimal_bounty() {
 */
 boolean hunt_bounty(bounty b) {
   accept_bounty(b.type); // doesn't do anything if already accepted
-  print("There are " + _remaining(optimal_bounty().type).to_string() + " " +
+  print("There are " + _remaining(b.type).to_string() + " " +
         b.plural + " remaining!", "green");
   current = b;
 
@@ -410,18 +453,27 @@ boolean hunt_bounty(bounty b) {
             to_monster(get_property("spookyPuttyMonster")) == b.monster) {
     use_combat($item[Spooky Putty monster], "combat");
   // if location is available or affordable, adventure there
-  } else if(can_adv(b.location, false) ||
+  } else if(can_adventure(b.location) ||
             (b.type == SPECIAL &&
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
     if(useBan)
       buy_banishers();
 
+    // use Nosy Nose to add copies of bounty to the queue
+    if(have_familiar($familiar[Nosy Nose]) && my_familiar() != $familiar[Nosy Nose])
+      use_familiar($familiar[Nosy Nose]);
+
     // unlock special zone if currently not available
-    if(!can_adv(b.location, false))
-      buy(1, CONTENT_ITEMS[b.location], maxSpecial);
+    if(!can_adventure(b.location)) {
+      print("Mafia determined we can't adv at " + b.location, "blue");
+      print("Attempting to unlock.", "blue");
+      if(item_amount(CONTENT_ITEMS[b.location]) < 1)
+        buy(1, CONTENT_ITEMS[b.location], maxSpecial);
+      use(1, CONTENT_ITEMS[b.location]);
+    }
 
     // prepare zone and check accessibility
-    if(!can_adv(b.location, true))
+    if(!can_adventure(b.location))
       abort("Couldn't prepare the zone for some reason");
 
     adventure(1, b.location, "combat");
@@ -512,7 +564,7 @@ skill get_unused_skill_banisher(location loc) {
   monster[skill] used = get_used_skill_banishers(loc);
 
   foreach banisher in BAN_SKILLS {
-    if(!(used contains banisher)) {
+    if(!(used contains banisher) && have_skill(banisher)) {
       if(banisher != $skill[Snokebomb] ||
          (banisher == $skill[Snokebomb] &&
          get_property("_snokebombUsed").to_int() < 3)) {
@@ -541,7 +593,13 @@ skill get_unused_skill_banisher(location loc) {
 string combat(int round, monster opp, string text) {
   // Check if the current monster is hunted
   if(is_hunted(opp)) {
-    print("Hey it's the bounty monster!", "blue");
+    if(round == 0) print("Hey it's the bounty monster!", "blue");
+
+    // add more copies of the bounty to the combat queue
+    if(addBountyToQueue(opp, true) != "") {
+      return addBountyToQueue(opp, false);
+    }
+    
     // Copy at the beginning of the fight if possible
     // TODO: Fix my_location() not working with copies (putty, etc)
     if(useCopier && (round == 0) && (_remaining(current) > 1)) {
@@ -566,8 +624,8 @@ string combat(int round, monster opp, string text) {
   } else if(useBan && can_banish(my_location())) {
     // Prefer skill banishes over items (they're free)
     skill skill_banisher = get_unused_skill_banisher(my_location());
-    if(have_skill(skill_banisher)) {
-      print("I have skill " + skill_banisher.to_string());
+    if(skill_banisher != $skill[none]) {
+      print("Going to banish with skill " + skill_banisher.to_string());
       return "skill " + to_string(skill_banisher);
     }
 
@@ -603,8 +661,9 @@ string combat(int round, monster opp, string text) {
     }
   }
 
-  // Default to CCS if custom actions can't/don't need to happen
-  return get_ccs_action(round);
+  // Kill monster by attacking. Assuming we are sufficiently over leveled
+  print("Simply attacking");
+  return "attack";
 }
 
 //----------------------------------------
