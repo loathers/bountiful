@@ -427,8 +427,12 @@ boolean hunt_bounty(bounty b) {
     adventure(1, b.location, "combat");
   } else {
     // turns out we're doing nothing
-    print("Can't access the location of the bounty! Give up?", "orange");
-    if(giveup) cancel_bounty(b.type); // automatically give up if unaccessible
+    print("Can't access bounty location: " + b.location, "orange");
+    print("Manually unlock bounty zone and run me again if you want to complete this bounty", "orange");
+    if(giveup) {
+      print("Giving up bounty based on pref bountiful.automaticallyGiveup", "orange");
+      cancel_bounty(b.type); // automatically give up if unaccessible
+    }
     return false;
   }
 
