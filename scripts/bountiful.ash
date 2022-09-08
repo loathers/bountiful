@@ -73,7 +73,8 @@ int[item] BAN_ITEMS = {
 boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,           // Snojo
   $skill[Talk About Politics] : true,  // Pantsgiving
-  $skill[Bowl a Curveball] : true
+  $skill[Bowl a Curveball] : true,
+  $skill[Curse of Vacation] : true
 };
 
 // Unlockers
@@ -326,6 +327,14 @@ string addBountyToQueue(monster opp, boolean speculate) {
     return "skill Get a Good Whiff of This Guy";
   }
 
+  // Curse of Stench. Specific to challenge path Avatar of Ed the Undying
+  monster stenchCursedMonster = get_property("stenchCursedMonster").to_monster();
+  if(stenchCursedMonster != opp && have_skill($skill[Curse of Stench]))
+  {
+    if(!speculate) print("Casting Curse of Stench this one!", "blue");
+    return "skill Curse of Stench";
+  }
+
   return "";
 }
 
@@ -377,7 +386,21 @@ boolean cancel_bounty(string type) {
     return false;
   }
 
-  visit_bhh("&action=giveup_"+substring(_bounty(type).kol_internal_type, 0, 3));
+  string value = "";
+  switch(type) {
+    case EASY:
+    case HARD:
+      value = _bounty(type).kol_internal_type;
+      break;
+    case SPECIAL:
+      value = "spe";
+      break;
+    default:
+      abort("cancel_bounty: Invalid bounty type - " + type);
+      break;
+  }
+
+  visit_bhh("&action=giveup_"+value);
   visit_bhh();
   return true;
 }
@@ -685,19 +708,19 @@ void main(string params) {
           // as well as the easy for the current day
           case 'easy':
             print("Hunting easy bounty!", "blue");
-            while(_bounty(EASY) != $bounty[none]) {
+            while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
             print("Hunting hard bounty!", "blue");
-            while(_bounty(HARD) != $bounty[none]) {
+            while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
             }
             break;
           case 'special':
             print("Hunting special bounty!", "blue");
-            while(_bounty(SPECIAL) != $bounty[none]) {
+            while(_bounty(SPECIAL) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
             break;
@@ -706,19 +729,20 @@ void main(string params) {
           case 'best':
             print("Hunting optimal bounty!", "blue");
             bounty b = optimal_bounty();
-            while(_bounty(b.type) != $bounty[none]) {
+            while(_bounty(b.type) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(b)) break;
             }
             break;
           case 'all':
             print("Hunting all bounties!", "blue");
-            while(optimal_bounty() != $bounty[none]) {
+            while(optimal_bounty() != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(optimal_bounty())) break;
             }
             break;
           default:
             print("Invalid bounty type!", "red");
         }
+        if(my_adventures() == 0) print("Ran out of adventures!", "red");
       } else {
         print("No bounty type given!", "red");
       }
