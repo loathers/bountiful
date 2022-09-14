@@ -735,8 +735,17 @@ void main(string params) {
             break;
           case 'all':
             print("Hunting all bounties!", "blue");
-            while(optimal_bounty() != $bounty[none] && my_adventures() > 0) {
-              if(!hunt_bounty(optimal_bounty())) break;
+            // Originally looped on optimal_bounty()
+            // However if one didn't finish, like unlocker is too expensive, 
+            // it would break and prevent remaining bounties from being hunted
+            while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
+              if(!hunt_bounty(_bounty(EASY))) break;
+            }
+            while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
+              if(!hunt_bounty(_bounty(HARD))) break;
+            }
+            while(_bounty(SPECIAL) != $bounty[none] && my_adventures() > 0) {
+              if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
             break;
           default:
