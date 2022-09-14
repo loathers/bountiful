@@ -313,7 +313,7 @@ string addBountyToQueue(monster opp, boolean speculate) {
 
   // Gallapagosian Mating Call
   monster gallapagosMonster = get_property("_gallapagosMonster").to_monster();
-  if(gallapagosMonster != opp && have_skill($skill[Gallapagosian Mating Call]))
+  if(gallapagosMonster != opp && have_skill($skill[Gallapagosian Mating Call]) && my_mp() >= 30)
   {
     if(!speculate) print("Mating call on this one!", "blue");
     return "skill Gallapagosian Mating Call";
@@ -329,7 +329,7 @@ string addBountyToQueue(monster opp, boolean speculate) {
 
   // Curse of Stench. Specific to challenge path Avatar of Ed the Undying
   monster stenchCursedMonster = get_property("stenchCursedMonster").to_monster();
-  if(stenchCursedMonster != opp && have_skill($skill[Curse of Stench]))
+  if(stenchCursedMonster != opp && have_skill($skill[Curse of Stench]) && my_mp() >= 35)
   {
     if(!speculate) print("Casting Curse of Stench this one!", "blue");
     return "skill Curse of Stench";
