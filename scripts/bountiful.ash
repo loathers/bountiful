@@ -74,7 +74,8 @@ boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,           // Snojo
   $skill[Talk About Politics] : true,  // Pantsgiving
   $skill[Bowl a Curveball] : true,
-  $skill[Curse of Vacation] : true
+  $skill[Curse of Vacation] : true,
+  $skill[System Sweep] : true
 };
 
 // Unlockers
