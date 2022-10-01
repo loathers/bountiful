@@ -752,6 +752,9 @@ void main(string params) {
           default:
             print("Invalid bounty type!", "red");
         }
+        // remove effects which can impact future adventuring
+        if(have_effect($effect[half-astral]) > 0)
+          cli_execute("shrug half-astral");
         if(my_adventures() == 0) print("Ran out of adventures!", "red");
       } else {
         print("No bounty type given!", "red");
