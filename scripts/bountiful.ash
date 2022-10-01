@@ -73,7 +73,9 @@ int[item] BAN_ITEMS = {
 boolean[skill] BAN_SKILLS = {
   $skill[Snokebomb] : true,           // Snojo
   $skill[Talk About Politics] : true,  // Pantsgiving
-  $skill[Bowl a Curveball] : true
+  $skill[Bowl a Curveball] : true,
+  $skill[Curse of Vacation] : true,
+  $skill[System Sweep] : true
 };
 
 // Unlockers
@@ -312,7 +314,7 @@ string addBountyToQueue(monster opp, boolean speculate) {
 
   // Gallapagosian Mating Call
   monster gallapagosMonster = get_property("_gallapagosMonster").to_monster();
-  if(gallapagosMonster != opp && have_skill($skill[Gallapagosian Mating Call]))
+  if(gallapagosMonster != opp && have_skill($skill[Gallapagosian Mating Call]) && my_mp() >= 30)
   {
     if(!speculate) print("Mating call on this one!", "blue");
     return "skill Gallapagosian Mating Call";
@@ -324,6 +326,14 @@ string addBountyToQueue(monster opp, boolean speculate) {
   {
     if(!speculate) print("Nosy Nose smelling this one!", "blue");
     return "skill Get a Good Whiff of This Guy";
+  }
+
+  // Curse of Stench. Specific to challenge path Avatar of Ed the Undying
+  monster stenchCursedMonster = get_property("stenchCursedMonster").to_monster();
+  if(stenchCursedMonster != opp && have_skill($skill[Curse of Stench]) && my_mp() >= 35)
+  {
+    if(!speculate) print("Casting Curse of Stench this one!", "blue");
+    return "skill Curse of Stench";
   }
 
   return "";
@@ -377,7 +387,21 @@ boolean cancel_bounty(string type) {
     return false;
   }
 
-  visit_bhh("&action=giveup_"+substring(_bounty(type).kol_internal_type, 0, 3));
+  string value = "";
+  switch(type) {
+    case EASY:
+    case HARD:
+      value = _bounty(type).kol_internal_type;
+      break;
+    case SPECIAL:
+      value = "spe";
+      break;
+    default:
+      abort("cancel_bounty: Invalid bounty type - " + type);
+      break;
+  }
+
+  visit_bhh("&action=giveup_"+value);
   visit_bhh();
   return true;
 }
@@ -479,8 +503,12 @@ boolean hunt_bounty(bounty b) {
     adventure(1, b.location, "combat");
   } else {
     // turns out we're doing nothing
-    print("Can't access the location of the bounty! Give up?", "orange");
-    if(giveup) cancel_bounty(b.type); // automatically give up if unaccessible
+    print("Can't access bounty location: " + b.location, "orange");
+    print("Manually unlock bounty zone and run me again if you want to complete this bounty", "orange");
+    if(giveup) {
+      print("Giving up bounty based on pref bountiful.automaticallyGiveup", "orange");
+      cancel_bounty(b.type); // automatically give up if unaccessible
+    }
     return false;
   }
 
@@ -681,19 +709,19 @@ void main(string params) {
           // as well as the easy for the current day
           case 'easy':
             print("Hunting easy bounty!", "blue");
-            while(_bounty(EASY) != $bounty[none]) {
+            while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
             print("Hunting hard bounty!", "blue");
-            while(_bounty(HARD) != $bounty[none]) {
+            while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
             }
             break;
           case 'special':
             print("Hunting special bounty!", "blue");
-            while(_bounty(SPECIAL) != $bounty[none]) {
+            while(_bounty(SPECIAL) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
             break;
@@ -702,19 +730,32 @@ void main(string params) {
           case 'best':
             print("Hunting optimal bounty!", "blue");
             bounty b = optimal_bounty();
-            while(_bounty(b.type) != $bounty[none]) {
+            while(_bounty(b.type) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(b)) break;
             }
             break;
           case 'all':
             print("Hunting all bounties!", "blue");
-            while(optimal_bounty() != $bounty[none]) {
-              if(!hunt_bounty(optimal_bounty())) break;
+            // Originally looped on optimal_bounty()
+            // However if one didn't finish, like unlocker is too expensive, 
+            // it would break and prevent remaining bounties from being hunted
+            while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
+              if(!hunt_bounty(_bounty(EASY))) break;
+            }
+            while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
+              if(!hunt_bounty(_bounty(HARD))) break;
+            }
+            while(_bounty(SPECIAL) != $bounty[none] && my_adventures() > 0) {
+              if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
             break;
           default:
             print("Invalid bounty type!", "red");
         }
+        // remove effects which can impact future adventuring
+        if(have_effect($effect[half-astral]) > 0)
+          cli_execute("shrug half-astral");
+        if(my_adventures() == 0) print("Ran out of adventures!", "red");
       } else {
         print("No bounty type given!", "red");
       }
