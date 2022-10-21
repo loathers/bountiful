@@ -339,6 +339,121 @@ string addBountyToQueue(monster opp, boolean speculate) {
   return "";
 }
 
+/**
+* Determines if desired monster is in our received fax.
+* If it is not, send fax to clear inventory
+* @param {monster} enemy - desired fax target
+* @returns {boolean} - true if have photocopy of desired monster
+*/
+boolean checkFax(monster enemy)
+{
+  if(item_amount($item[photocopied monster]) == 0)
+  {
+    cli_execute("fax receive");
+  }
+
+  if(get_property("photocopyMonster") == enemy.to_string())
+  {
+    return true;
+  }
+
+  cli_execute("fax send");
+  return false;
+}
+
+/**
+* Attempts to fax and fight a monster. 
+* Will try CheeseFax first and if fails attempts EasyFax
+* @param {monster} enemy - desired fax target
+* @returns {boolean} - true if desired monster was faxed and fought
+*/
+boolean handleFaxMonster(monster enemy)
+{
+  if(get_property("_photocopyUsed").to_boolean())
+  {
+    return false;
+  }
+  if(contains_text(get_property("_bountiful.FailedFaxes"), enemy))
+  {
+    return false;
+  }
+  if(!is_unrestricted($item[deluxe fax machine]))
+  {
+    return false;
+  }
+  if(item_amount($item[Clan VIP Lounge Key]) == 0)
+  {
+    print("Faxing is enabled in Bountiful but you don't have a Clan VIP Lounge Key!", "red");
+    return false;
+  }
+  if(!(get_clan_lounge() contains $item[Deluxe Fax Machine]))
+  {
+    print("Faxing is enabled in Bountiful but the clan you are in doesn't have a fax machine!", "red");
+    return false;
+  }
+
+  print("Using fax machine to summon " + enemy.name, "blue");
+
+  if(item_amount($item[Photocopied Monster]) != 0)
+  {
+    if(get_property("photocopyMonster") == enemy)
+    {
+      print("We already have a copy of the monster we want to fax!", "blue");
+      use_combat($item[photocopied monster], "combat");
+      return true;
+    }
+    else
+    {
+      print("We already have a photocopy and not the one we wanted. Disposing of bad copy.", "blue");
+      cli_execute("fax send");
+    }
+  }
+
+  print("Faxing: " + enemy + " using cheesefax.", "green");
+  chat_private("cheesefax", enemy.to_string());
+  for(int i = 0; i < 3; i++)
+  {
+    //wait 10 seconds before trying to get fax
+    wait(10);
+    if(checkFax(enemy))
+    {
+      //got correct photocopied monster! Fight it now if desired
+      print("Sucessfully faxed " + enemy);
+      use_combat($item[photocopied monster], "combat");
+      return true;
+    }
+  }
+
+  print("Faxing: " + enemy + " using easyfax.", "green");
+  chat_private("easyfax", enemy.to_string());
+  for(int i = 0; i < 3; i++)
+  {
+    //wait 10 seconds before trying to get fax
+    wait(10);
+    if(checkFax(enemy))
+    {
+      //got correct photocopied monster! Fight it now if desired
+      print("Sucessfully faxed " + enemy);
+      use_combat($item[photocopied monster], "combat");
+      return true;
+    }
+  }
+
+  print("Failed to use clan Fax Machine to acquire a photocopied " + enemy + ". Potentially this monster is not in the fax network.");
+  if(!contains_text(get_property("_bountiful.FailedFaxes"), enemy))
+  {
+    string cur = get_property("_bountiful.FailedFaxes");
+    if(cur != "")
+    {
+      cur = cur + ", ";
+    }
+    cur = cur + enemy;
+    set_property("_bountiful.FailedFaxes", cur);
+  }
+  
+  return false;
+}
+
 //----------------------------------------
 // BHH Functions
 
@@ -463,12 +578,8 @@ boolean hunt_bounty(bounty b) {
   current = b;
 
   // TODO: Fax logic for doable inaccessible bounties
-  if(useFax && !to_boolean(get_property("_photocopyUsed"))) {
-    if(can_banish(_bounty(SPECIAL).location) ||
-       (b.type == SPECIAL && !can_banish(_bounty(SPECIAL).location))) {
-      faxbot(_bounty(b.type).monster);
-      use_combat($item[photocopied monster], "combat");
-    }
+  if(useFax && !to_boolean(get_property("_photocopyUsed")) && !contains_text(get_property("_bountiful.FailedFaxes"), b.monster)) {
+    handleFaxMonster(b.monster);
   // use copy if that's what we're doing and a copy is avilable
   } else if(useCopier && item_amount($item[Rain-Doh box full of monster]) > 0 &&
             to_monster(get_property("rainDohMonster")) == b.monster) {
