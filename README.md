@@ -16,7 +16,7 @@ Property                      | Default Value     | Description
 ----------------------------- | ----------------- | -----------------------------------------------------------------------
 bountiful.useBanisher         | false             | Whether or not to banish non-bounty monsters within the bounty location
 bountiful.useCopier           | false             | Whether or not to copy the bounty monster using Spooky Putty/Rain-Doh
-bountiful.useFax              | false             | Whether or not to fax in the bounty monster
+bountiful.useFax              | false             | Whether or not to fax in the bounty monster. Ensure your clan uses the fax machine for general purpose and is not relied upon by the fax network bots.
 bountiful.useFreeKill         | false             | Whether or not to kill the bounty monster with Power pills
 bountiful.maxBanishCost       | autoBuyPriceLimit | Maximum price willing to spend on individual banishers
 bountiful.maxSpecialCost      | autoBuyPriceLimit | Maximum price willing to spend on special bounty content unlockers
