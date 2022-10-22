@@ -611,6 +611,43 @@ boolean hunt_bounty(bounty b) {
     if(!can_adventure(b.location))
       abort("Couldn't prepare the zone for some reason");
 
+    if($locations[The Haunted Pantry,The Black Forest,Inside The Palindome,The Outskirts of Cobb\'s Knob,Cobb\'s Knob Treasury,The Jungles of Ancient Loathing] contains b.location){
+      int wantedCombatRate = 25;
+      if(b.location == $location[The Black Forest]) {
+        wantedCombatRate = 5;
+      }
+      if(b.location == $location[Cobb\'s Knob Treasury]) {
+        wantedCombatRate = 15;
+      }
+      else if($locations[The Haunted Pantry,The Outskirts of Cobb\'s Knob] contains b.location) {
+        wantedCombatRate = 20;
+      }
+      if(numeric_modifier("combat rate") < wantedCombatRate && have_effect($effect[The Sonata of Sneakiness]) > 0) {
+        catch cli_execute("shrug The Sonata of Sneakiness");
+      }
+      if(numeric_modifier("combat rate") < wantedCombatRate && have_effect($effect[Musk of the Moose]) == 0) {
+        if(have_skill($skill[Musk of the Moose]) && my_mp() >= mp_cost($skill[Musk of the Moose])) {
+          catch cli_execute("cast Musk of the Moose");
+        }
+      }
+      if(numeric_modifier("combat rate") < wantedCombatRate && have_effect($effect[Carlweather\'s Cantata of Confrontation]) == 0) {
+        if(have_skill($skill[Carlweather\'s Cantata of Confrontation]) && my_mp() >= mp_cost($skill[Carlweather\'s Cantata of Confrontation])){
+          catch cli_execute("cast Carlweather\'s Cantata of Confrontation");
+        }
+      }
+    }
+    if($locations[The Castle in the Clouds in the Sky (Top Floor)] contains b.location)	//noncombats let you choose the right monster or skip{
+      if(have_effect($effect[Carlweather\'s Cantata of Confrontation]) > 0) {
+        catch cli_execute("shrug Carlweather\'s Cantata of Confrontation");
+      }
+      if(have_effect($effect[Smooth Movements]) == 0 && have_skill($skill[Smooth Movement]) && my_mp() >= mp_cost($skill[Smooth Movement])) {
+        catch cli_execute("cast Smooth Movement");
+      }
+      if(have_effect($effect[The Sonata of Sneakiness]) == 0 && have_skill($skill[The Sonata of Sneakiness]) && my_mp() >= mp_cost($skill[The Sonata of Sneakiness])) {
+        catch cli_execute("cast The Sonata of Sneakiness");
+      }
+    }
+
     adventure(1, b.location, "combat");
   } else {
     // turns out we're doing nothing
