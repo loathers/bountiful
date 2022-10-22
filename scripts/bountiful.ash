@@ -611,7 +611,44 @@ boolean hunt_bounty(bounty b) {
     if(!can_adventure(b.location))
       abort("Couldn't prepare the zone for some reason");
 
+    if($locations[The Haunted Pantry,The Black Forest,Inside The Palindome,The Outskirts of Cobb\'s Knob,Cobb\'s Knob Treasury,The Jungles of Ancient Loathing] contains b.location){
+      int wantedCombatRate = 25;
+      if(b.location == $location[The Black Forest]) {
+        wantedCombatRate = 5;
+      }
+      if(b.location == $location[Cobb\'s Knob Treasury]) {
+        wantedCombatRate = 15;
+      }
+      else if($locations[The Haunted Pantry,The Outskirts of Cobb\'s Knob] contains b.location) {
+        wantedCombatRate = 20;
+      }
+      if(numeric_modifier("combat rate") < wantedCombatRate && have_effect($effect[The Sonata of Sneakiness]) > 0) {
+        catch cli_execute("shrug The Sonata of Sneakiness");
+      }
+      if(numeric_modifier("combat rate") < wantedCombatRate && have_effect($effect[Musk of the Moose]) == 0) {
+        if(have_skill($skill[Musk of the Moose]) && my_mp() >= mp_cost($skill[Musk of the Moose])) {
+          catch cli_execute("cast Musk of the Moose");
+        }
+      }
+      if(numeric_modifier("combat rate") < wantedCombatRate && have_effect($effect[Carlweather\'s Cantata of Confrontation]) == 0) {
+        if(have_skill($skill[Carlweather\'s Cantata of Confrontation]) && my_mp() >= mp_cost($skill[Carlweather\'s Cantata of Confrontation])){
+          catch cli_execute("cast Carlweather\'s Cantata of Confrontation");
+        }
+      }
+    }
+    if($locations[The Castle in the Clouds in the Sky (Top Floor)] contains b.location)	//noncombats let you choose the right monster or skip{
+      if(have_effect($effect[Carlweather\'s Cantata of Confrontation]) > 0) {
+        catch cli_execute("shrug Carlweather\'s Cantata of Confrontation");
+      }
+      if(have_effect($effect[Smooth Movements]) == 0 && have_skill($skill[Smooth Movement]) && my_mp() >= mp_cost($skill[Smooth Movement])) {
+        catch cli_execute("cast Smooth Movement");
+      }
+      if(have_effect($effect[The Sonata of Sneakiness]) == 0 && have_skill($skill[The Sonata of Sneakiness]) && my_mp() >= mp_cost($skill[The Sonata of Sneakiness])) {
+        catch cli_execute("cast The Sonata of Sneakiness");
+      }
+    }
     adv1(b.location, "combat");
+
   } else {
     // turns out we're doing nothing
     print("Can't access bounty location: " + b.location, "orange");
@@ -824,11 +861,28 @@ void main(string params) {
           // as well as the easy for the current day
           case 'easy':
             print("Hunting easy bounty!", "blue");
+
+            set_property("choiceAdventure502",2);	// Arboreal Respite
+            set_property("choiceAdventure505",2);	// Consciousness of a Stream
+            set_property("choiceAdventure1062",3);	// Lots of Options
+
             while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
+
+            set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
+            set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
+            set_property("choiceAdventure671",4);	// Out in the Open Source
+            set_property("choiceAdventure675",4);	// Melon Collie and the Infinite Lameness
+            set_property("choiceAdventure676",1);	// Flavor of a Raver
+            set_property("choiceAdventure677",2);	// Copper Feel
+            set_property("choiceAdventure678",4);	// Yeah, You're for Me, Punk Rock Giant
+            set_property("choiceAdventure786",3);	// Working Holiday
+            set_property("choiceAdventure923",1);	// The Black Forest
+            set_property("choiceAdventure924",1);	// You Found Your Thrill
+
             print("Hunting hard bounty!", "blue");
             while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
