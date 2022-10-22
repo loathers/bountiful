@@ -820,11 +820,28 @@ void main(string params) {
           // as well as the easy for the current day
           case 'easy':
             print("Hunting easy bounty!", "blue");
+
+            set_property("choiceAdventure502",2);	// Arboreal Respite
+            set_property("choiceAdventure505",2);	// Consciousness of a Stream
+            set_property("choiceAdventure1062",3);	// Lots of Options
+
             while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
+
+            set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
+            set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
+            set_property("choiceAdventure671",4);	// Out in the Open Source
+            set_property("choiceAdventure675",4);	// Melon Collie and the Infinite Lameness
+            set_property("choiceAdventure676",1);	// Flavor of a Raver
+            set_property("choiceAdventure677",2);	// Copper Feel
+            set_property("choiceAdventure678",4);	// Yeah, You're for Me, Punk Rock Giant
+            set_property("choiceAdventure786",3);	// Working Holiday
+            set_property("choiceAdventure923",1);	// The Black Forest
+            set_property("choiceAdventure924",1);	// You Found Your Thrill
+
             print("Hunting hard bounty!", "blue");
             while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
