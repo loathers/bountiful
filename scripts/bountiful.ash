@@ -636,7 +636,8 @@ boolean hunt_bounty(bounty b) {
         }
       }
     }
-    if($locations[The Castle in the Clouds in the Sky (Top Floor)] contains b.location)	//noncombats let you choose the right monster or skip{
+    //noncombats which let you choose the right monster or skip
+    if($locations[The Castle in the Clouds in the Sky (Top Floor)] contains b.location){
       if(have_effect($effect[Carlweather\'s Cantata of Confrontation]) > 0) {
         catch cli_execute("shrug Carlweather\'s Cantata of Confrontation");
       }
@@ -647,7 +648,7 @@ boolean hunt_bounty(bounty b) {
         catch cli_execute("cast The Sonata of Sneakiness");
       }
     }
-    adv1(b.location, "combat");
+    adv1(b.location, 1, "combat");
 
   } else {
     // turns out we're doing nothing
