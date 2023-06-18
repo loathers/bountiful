@@ -75,8 +75,9 @@ boolean[skill] BAN_SKILLS = {
   $skill[Talk About Politics] : true, // Pantsgiving IOTM
   $skill[Bowl a Curveball] : true,    // Costmic Bowling Ball IOTM
   $skill[Curse of Vacation] : true,   // Avatar of Ed path
-  $skill[System Sweep] : true         // Grey You path
-  $skill[Punt] : true                 // Pig Skinner (SoL) path
+  $skill[System Sweep] : true,        // Grey You path
+  $skill[Punt] : true,                // Pig Skinner (SoL) path
+  $skill[Batter Up!] : true           // Seal Clubber class
 };
 
 // Unlockers
