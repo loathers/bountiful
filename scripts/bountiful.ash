@@ -746,7 +746,7 @@ skill get_unused_skill_banisher(location loc) {
   monster[skill] used = get_used_skill_banishers(loc);
 
   foreach banisher in BAN_SKILLS {
-    if(!(used contains banisher) && have_skill(banisher)) {
+    if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher)) {
       if(banisher != $skill[Snokebomb] ||
          (banisher == $skill[Snokebomb] &&
          get_property("_snokebombUsed").to_int() < 3)) {
