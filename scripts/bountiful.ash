@@ -863,6 +863,7 @@ void main(string params) {
           case 'easy':
             print("Hunting easy bounty!", "blue");
 
+            set_property("choiceAdventure113",2);	// Knob Goblin BBQ
             set_property("choiceAdventure502",2);	// Arboreal Respite
             set_property("choiceAdventure505",2);	// Consciousness of a Stream
             set_property("choiceAdventure1062",3);	// Lots of Options
