@@ -709,6 +709,10 @@ item get_unused_item_banisher(location loc) {
   monster[item] used = get_used_item_banishers(loc);
 
   foreach banisher in BAN_ITEMS {
+    if(mall_price(banisher) > maxBanish) {
+      print("Not using banisher " + banisher.to_string() + "as it is too expensive. Value > maxBanishCost preference", "red");
+      continue;
+    }
     if(!(used contains banisher)) {
       return banisher;
     }
