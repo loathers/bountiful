@@ -69,17 +69,6 @@ int[item] BAN_ITEMS = {
   $item[divine champagne popper] : 5
 };
 
-// TODO: add other skills (mostly IOTMs I don't have)
-boolean[skill] BAN_SKILLS = {
-  $skill[Snokebomb] : true,           // Snojo IOTM
-  $skill[Talk About Politics] : true, // Pantsgiving IOTM
-  $skill[Bowl a Curveball] : true,    // Costmic Bowling Ball IOTM
-  $skill[Curse of Vacation] : true,   // Avatar of Ed path
-  $skill[System Sweep] : true,        // Grey You path
-  $skill[Punt] : true,                // Pig Skinner (SoL) path
-  $skill[Batter Up!] : true           // Seal Clubber class
-};
-
 // Unlockers
 item[location] CONTENT_ITEMS = {
   $location[Anger Man\'s Level] : $item[jar of psychoses (The Crackpot Mystic)],
@@ -750,14 +739,65 @@ monster[skill] get_used_skill_banishers(location loc) {
 skill get_unused_skill_banisher(location loc) {
   monster[skill] used = get_used_skill_banishers(loc);
 
-  foreach banisher in BAN_SKILLS {
-    if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher)) {
-      if(banisher != $skill[Snokebomb] ||
-         (banisher == $skill[Snokebomb] &&
-         get_property("_snokebombUsed").to_int() < 3)) {
-           return banisher;
-         }
-    }
+  // Snokebomb from Snojo IOTM
+  skill banisher = $skill[Snokebomb];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher) && get_property("_snokebombUsed").to_int() < 3)
+  {
+    print("Snokebomb on this one!", "blue");
+    return banisher;
+  }
+
+  // Talk About Politics from Pantsgiving IOTM
+  banisher = $skill[Talk About Politics];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher) && get_property("_pantsgivingBanish").to_int() < 5)
+  {
+    print("Talk About Politics on this one!", "blue");
+    return banisher;
+  }
+
+  // Cosmic Bowling Ball IOTM
+  banisher = $skill[Bowl a Curveball];
+  if(!(used contains banisher) && have_skill(banisher))
+  {
+    print("Bowl a Curveball on this one!", "blue");
+    return banisher;
+  }
+
+  // Curse of Vacation from Avatar of Ed path
+  banisher = $skill[Curse of Vacation];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
+  {
+    print("Curse of Vacation on this one!", "blue");
+    return banisher;
+  }
+
+  // System Sweep from Avatar of Grey You path
+  banisher = $skill[System Sweep];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
+  {
+    print("System Sweep on this one!", "blue");
+    return banisher;
+  }
+
+  // Punt from being a Pig Skinner if Shadows over Loathing
+  banisher = $skill[Punt];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
+  {
+    print("Punt on this one!", "blue");
+    return banisher;
+  }
+
+  // Batter Up! from being a Seal Clubber
+  banisher = $skill[Batter Up!];
+  // stolen from autoscend
+  boolean hasClubEquipped()
+  {
+    return item_type(equipped_item($slot[weapon])) == "club" || (item_type(equipped_item($slot[weapon])) == "sword" && have_effect($effect[iron palms]) > 0);
+  }
+  if(!(used contains banisher) && have_skill(banisher) && my_fury() >= 5 && hasClubEquipped())
+  {
+    print("Batter Up! on this one!", "blue");
+    return banisher;
   }
 
   return $skill[none];
