@@ -80,7 +80,7 @@ boolean[skill] BAN_SKILLS = {
 
 // Unlockers
 item[location] CONTENT_ITEMS = {
-  $location[Anger Man's Level] : $item[jar of psychoses (The Crackpot Mystic)],
+  $location[Anger Man\'s Level] : $item[jar of psychoses (The Crackpot Mystic)],
   $location[Pirates of the Garbage Barges] : $item[one-day ticket to Dinseylandfill],
   $location[the Ice Hotel] : $item[one-day ticket to The Glaciest],
   $location[The Stately Pleasure Dome] : $item[tiny bottle of absinthe],
@@ -90,7 +90,7 @@ item[location] CONTENT_ITEMS = {
   $location[The Nightmare Meatrealm] : $item[jar of psychoses (The Meatsmith)],
   $location[Sloppy Seconds Diner] : $item[one-day ticket to Spring Break Beach],
   $location[An Incredibly Strange Place (Bad Trip)] : $item[astral mushroom],
-  $location[the Red Queen's Garden] : $item[&quot;DRINK ME&quot; potion],
+  $location[the Red Queen\'s Garden] : $item[&quot;DRINK ME&quot; potion],
   $location[Mt. Molehill] : $item[llama lama gong],
   $location[The Jungles of Ancient Loathing] : $item[empty agua de vida bottle],
   $location[Chinatown Shops] : $item[jar of psychoses (The Suspicious-Looking Guy)],
@@ -874,6 +874,7 @@ void main(string params) {
             }
             break;
           case 'hard':
+            print("Hunting hard bounty!", "blue");
 
             set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
             set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
@@ -886,7 +887,6 @@ void main(string params) {
             set_property("choiceAdventure923",1);	// The Black Forest
             set_property("choiceAdventure924",1);	// You Found Your Thrill
 
-            print("Hunting hard bounty!", "blue");
             while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
             }
