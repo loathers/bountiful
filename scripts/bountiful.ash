@@ -867,6 +867,7 @@ void main(string params) {
             set_property("choiceAdventure502",2);	// Arboreal Respite
             set_property("choiceAdventure505",2);	// Consciousness of a Stream
             set_property("choiceAdventure1062",3);	// Lots of Options
+            set_property("choiceAdventure1060",3);	// Temporarily Out of Skeletons. Get mus substate
 
             while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
@@ -892,6 +893,9 @@ void main(string params) {
             break;
           case 'special':
             print("Hunting special bounty!", "blue");
+
+            set_property("choiceAdventure276",2);	// The Gong Has Been Bung
+
             while(_bounty(SPECIAL) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
