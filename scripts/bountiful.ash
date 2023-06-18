@@ -71,11 +71,12 @@ int[item] BAN_ITEMS = {
 
 // TODO: add other skills (mostly IOTMs I don't have)
 boolean[skill] BAN_SKILLS = {
-  $skill[Snokebomb] : true,           // Snojo
-  $skill[Talk About Politics] : true,  // Pantsgiving
-  $skill[Bowl a Curveball] : true,
-  $skill[Curse of Vacation] : true,
-  $skill[System Sweep] : true
+  $skill[Snokebomb] : true,           // Snojo IOTM
+  $skill[Talk About Politics] : true, // Pantsgiving IOTM
+  $skill[Bowl a Curveball] : true,    // Costmic Bowling Ball IOTM
+  $skill[Curse of Vacation] : true,   // Avatar of Ed path
+  $skill[System Sweep] : true         // Grey You path
+  $skill[Punt] : true                 // Pig Skinner (SoL) path
 };
 
 // Unlockers
@@ -332,8 +333,16 @@ string addBountyToQueue(monster opp, boolean speculate) {
   monster stenchCursedMonster = get_property("stenchCursedMonster").to_monster();
   if(stenchCursedMonster != opp && have_skill($skill[Curse of Stench]) && my_mp() >= 35)
   {
-    if(!speculate) print("Casting Curse of Stench this one!", "blue");
+    if(!speculate) print("Casting Curse of Stench on this one!", "blue");
     return "skill Curse of Stench";
+  }
+
+  // Motif. Specific to plyaing as Jazz Agent in challenge path Avatar of Shadows Over Loathing
+  monster motifMonster = get_property("motifMonster").to_monster();
+  if(motifMonster != opp && have_skill($skill[motif]) && my_mp() >= 50)
+  {
+    if(!speculate) print("Casting Motif on this one!", "blue");
+    return "skill Motif";
   }
 
   return "";
