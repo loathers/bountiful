@@ -453,6 +453,42 @@ boolean handleFaxMonster(monster enemy)
   return false;
 }
 
+/**
+* Helper function to set all potential NC's we may encounter
+*/
+void setChoiceAdventures()
+{
+  // easy bounties
+  set_property("choiceAdventure113",2);	// Knob Goblin BBQ
+  set_property("choiceAdventure502",2);	// Arboreal Respite
+  set_property("choiceAdventure505",2);	// Consciousness of a Stream
+  set_property("choiceAdventure1062",3);	// Lots of Options
+  set_property("choiceAdventure1060",3);	// Temporarily Out of Skeletons. Get mus substate
+
+  // hard bounties
+  set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
+  set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
+  set_property("choiceAdventure671",4);	// Out in the Open Source
+  set_property("choiceAdventure675",4);	// Melon Collie and the Infinite Lameness
+  set_property("choiceAdventure676",1);	// Flavor of a Raver
+  set_property("choiceAdventure677",2);	// Copper Feel
+  set_property("choiceAdventure678",4);	// Yeah, You're for Me, Punk Rock Giant
+  set_property("choiceAdventure786",3);	// Working Holiday
+  set_property("choiceAdventure923",1);	// The Black Forest
+  set_property("choiceAdventure924",1);	// You Found Your Thrill
+
+  // june cleaver IOTM
+  set_property("choiceAdventure1467",1);	// Poetic Justice. Don't get 5 adv as we don't handle getting beaten up
+  set_property("choiceAdventure1468",2);	// Aunts not Ants. Get muscle
+  set_property("choiceAdventure1469",3);	// Beware of Alligators. Get meat
+  set_property("choiceAdventure1470",2);	// Teacher's Pet. Get teacher's pen
+  set_property("choiceAdventure1471",1);	// Lost and Found. Get meat buff potion
+  set_property("choiceAdventure1472",1);	// Summer Days. Get -combat potion
+  set_property("choiceAdventure1473",3);	// Bath Time. Get + hot res and init
+  set_property("choiceAdventure1474",1);	// Delicious Sprouts. Get mys
+  set_property("choiceAdventure1475",1);	// Hypnotic Master. Get mother's necklace
+}
+
 //----------------------------------------
 // BHH Functions
 
@@ -910,6 +946,7 @@ void main(string params) {
     case 'hunt':
       if(arglen > 1) {
         visit_bhh(); // refresh BHH status
+        setChoiceAdventures();
         switch(args[1]) {
           // This will accept *ALL* easy/hard/special bounties
           // ie. if you have an easy from a previous day, it will do that one,
@@ -917,29 +954,12 @@ void main(string params) {
           case 'easy':
             print("Hunting easy bounty!", "blue");
 
-            set_property("choiceAdventure113",2);	// Knob Goblin BBQ
-            set_property("choiceAdventure502",2);	// Arboreal Respite
-            set_property("choiceAdventure505",2);	// Consciousness of a Stream
-            set_property("choiceAdventure1062",3);	// Lots of Options
-            set_property("choiceAdventure1060",3);	// Temporarily Out of Skeletons. Get mus substate
-
             while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
             print("Hunting hard bounty!", "blue");
-
-            set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
-            set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
-            set_property("choiceAdventure671",4);	// Out in the Open Source
-            set_property("choiceAdventure675",4);	// Melon Collie and the Infinite Lameness
-            set_property("choiceAdventure676",1);	// Flavor of a Raver
-            set_property("choiceAdventure677",2);	// Copper Feel
-            set_property("choiceAdventure678",4);	// Yeah, You're for Me, Punk Rock Giant
-            set_property("choiceAdventure786",3);	// Working Holiday
-            set_property("choiceAdventure923",1);	// The Black Forest
-            set_property("choiceAdventure924",1);	// You Found Your Thrill
 
             while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
