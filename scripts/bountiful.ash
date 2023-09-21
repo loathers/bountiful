@@ -937,11 +937,9 @@ string combat(int round, monster opp, string text) {
     }
   }
 
-  if(my_location() == $location[Mt. Molehill]) [
-    if(have_skill($skill[Tunnel Downwards])) {
-      return "skill Tunnel Downwards";
-    }
-  ]
+  if(my_location() == $location[Mt. Molehill] && have_skill($skill[Tunnel Downwards])) {
+    return "skill Tunnel Downwards";
+  }
   if(will_usually_miss())
   {
     // simply attacking won't work well
