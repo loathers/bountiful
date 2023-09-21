@@ -932,6 +932,24 @@ string combat(int round, monster opp, string text) {
     }
   }
 
+  if(my_location() == $location[Mt. Molehill]) [
+    if(have_skill($skill[Tunnel Downwards])) {
+      return "skill Tunnel Downwards";
+    }
+  ]
+  if(will_usually_miss())
+  {
+    // simply attacking won't work well
+    if(expected_damage() * 3 > my_hp()) {
+      // use big spell if will die within 3 enemy hits
+      if(have_skill($skill[saucegeyser]) && my_mp() > mp_cost($skill[saucegeyser])) {
+        return "skill saucegeyser";
+      }
+    }
+    if(have_skill($skill[saucestorm]) && my_mp() > mp_cost($skill[saucestorm])) {
+        return "skill saucestorm";
+      }
+  }
   // Kill monster by attacking. Assuming we are sufficiently over leveled
   print("Simply attacking");
   return "attack";
