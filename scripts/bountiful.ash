@@ -69,18 +69,9 @@ int[item] BAN_ITEMS = {
   $item[divine champagne popper] : 5
 };
 
-// TODO: add other skills (mostly IOTMs I don't have)
-boolean[skill] BAN_SKILLS = {
-  $skill[Snokebomb] : true,           // Snojo
-  $skill[Talk About Politics] : true,  // Pantsgiving
-  $skill[Bowl a Curveball] : true,
-  $skill[Curse of Vacation] : true,
-  $skill[System Sweep] : true
-};
-
 // Unlockers
 item[location] CONTENT_ITEMS = {
-  $location[Anger Man's Level] : $item[jar of psychoses (The Crackpot Mystic)],
+  $location[Anger Man\'s Level] : $item[jar of psychoses (The Crackpot Mystic)],
   $location[Pirates of the Garbage Barges] : $item[one-day ticket to Dinseylandfill],
   $location[the Ice Hotel] : $item[one-day ticket to The Glaciest],
   $location[The Stately Pleasure Dome] : $item[tiny bottle of absinthe],
@@ -90,7 +81,7 @@ item[location] CONTENT_ITEMS = {
   $location[The Nightmare Meatrealm] : $item[jar of psychoses (The Meatsmith)],
   $location[Sloppy Seconds Diner] : $item[one-day ticket to Spring Break Beach],
   $location[An Incredibly Strange Place (Bad Trip)] : $item[astral mushroom],
-  $location[the Red Queen's Garden] : $item[&quot;DRINK ME&quot; potion],
+  $location[the Red Queen\'s Garden] : $item[&quot;DRINK ME&quot; potion],
   $location[Mt. Molehill] : $item[llama lama gong],
   $location[The Jungles of Ancient Loathing] : $item[empty agua de vida bottle],
   $location[Chinatown Shops] : $item[jar of psychoses (The Suspicious-Looking Guy)],
@@ -332,8 +323,16 @@ string addBountyToQueue(monster opp, boolean speculate) {
   monster stenchCursedMonster = get_property("stenchCursedMonster").to_monster();
   if(stenchCursedMonster != opp && have_skill($skill[Curse of Stench]) && my_mp() >= 35)
   {
-    if(!speculate) print("Casting Curse of Stench this one!", "blue");
+    if(!speculate) print("Casting Curse of Stench on this one!", "blue");
     return "skill Curse of Stench";
+  }
+
+  // Motif. Specific to plyaing as Jazz Agent in challenge path Avatar of Shadows Over Loathing
+  monster motifMonster = get_property("motifMonster").to_monster();
+  if(motifMonster != opp && have_skill($skill[motif]) && my_mp() >= 50)
+  {
+    if(!speculate) print("Casting Motif on this one!", "blue");
+    return "skill Motif";
   }
 
   return "";
@@ -452,6 +451,42 @@ boolean handleFaxMonster(monster enemy)
   }
   
   return false;
+}
+
+/**
+* Helper function to set all potential NC's we may encounter
+*/
+void setChoiceAdventures()
+{
+  // easy bounties
+  set_property("choiceAdventure113",2);	// Knob Goblin BBQ
+  set_property("choiceAdventure502",2);	// Arboreal Respite
+  set_property("choiceAdventure505",2);	// Consciousness of a Stream
+  set_property("choiceAdventure1062",3);	// Lots of Options
+  set_property("choiceAdventure1060",3);	// Temporarily Out of Skeletons. Get mus substate
+
+  // hard bounties
+  set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
+  set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
+  set_property("choiceAdventure671",4);	// Out in the Open Source
+  set_property("choiceAdventure675",4);	// Melon Collie and the Infinite Lameness
+  set_property("choiceAdventure676",1);	// Flavor of a Raver
+  set_property("choiceAdventure677",2);	// Copper Feel
+  set_property("choiceAdventure678",4);	// Yeah, You're for Me, Punk Rock Giant
+  set_property("choiceAdventure786",3);	// Working Holiday
+  set_property("choiceAdventure923",1);	// The Black Forest
+  set_property("choiceAdventure924",1);	// You Found Your Thrill
+
+  // june cleaver IOTM
+  set_property("choiceAdventure1467",1);	// Poetic Justice. Don't get 5 adv as we don't handle getting beaten up
+  set_property("choiceAdventure1468",2);	// Aunts not Ants. Get muscle
+  set_property("choiceAdventure1469",3);	// Beware of Alligators. Get meat
+  set_property("choiceAdventure1470",2);	// Teacher's Pet. Get teacher's pen
+  set_property("choiceAdventure1471",1);	// Lost and Found. Get meat buff potion
+  set_property("choiceAdventure1472",1);	// Summer Days. Get -combat potion
+  set_property("choiceAdventure1473",3);	// Bath Time. Get + hot res and init
+  set_property("choiceAdventure1474",1);	// Delicious Sprouts. Get mys
+  set_property("choiceAdventure1475",1);	// Hypnotic Master. Get mother's necklace
 }
 
 //----------------------------------------
@@ -699,6 +734,10 @@ item get_unused_item_banisher(location loc) {
   monster[item] used = get_used_item_banishers(loc);
 
   foreach banisher in BAN_ITEMS {
+    if(mall_price(banisher) > maxBanish) {
+      print("Not using banisher " + banisher.to_string() + "as it is too expensive. Value > maxBanishCost preference", "red");
+      continue;
+    }
     if(!(used contains banisher)) {
       return banisher;
     }
@@ -736,14 +775,65 @@ monster[skill] get_used_skill_banishers(location loc) {
 skill get_unused_skill_banisher(location loc) {
   monster[skill] used = get_used_skill_banishers(loc);
 
-  foreach banisher in BAN_SKILLS {
-    if(!(used contains banisher) && have_skill(banisher)) {
-      if(banisher != $skill[Snokebomb] ||
-         (banisher == $skill[Snokebomb] &&
-         get_property("_snokebombUsed").to_int() < 3)) {
-           return banisher;
-         }
-    }
+  // Snokebomb from Snojo IOTM
+  skill banisher = $skill[Snokebomb];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher) && get_property("_snokebombUsed").to_int() < 3)
+  {
+    print("Snokebomb on this one!", "blue");
+    return banisher;
+  }
+
+  // Talk About Politics from Pantsgiving IOTM
+  banisher = $skill[Talk About Politics];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher) && get_property("_pantsgivingBanish").to_int() < 5)
+  {
+    print("Talk About Politics on this one!", "blue");
+    return banisher;
+  }
+
+  // Cosmic Bowling Ball IOTM
+  banisher = $skill[Bowl a Curveball];
+  if(!(used contains banisher) && have_skill(banisher))
+  {
+    print("Bowl a Curveball on this one!", "blue");
+    return banisher;
+  }
+
+  // Curse of Vacation from Avatar of Ed path
+  banisher = $skill[Curse of Vacation];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
+  {
+    print("Curse of Vacation on this one!", "blue");
+    return banisher;
+  }
+
+  // System Sweep from Avatar of Grey You path
+  banisher = $skill[System Sweep];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
+  {
+    print("System Sweep on this one!", "blue");
+    return banisher;
+  }
+
+  // Punt from being a Pig Skinner if Shadows over Loathing
+  banisher = $skill[Punt];
+  if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
+  {
+    print("Punt on this one!", "blue");
+    return banisher;
+  }
+
+  // Batter Up! from being a Seal Clubber
+  banisher = $skill[Batter Up!];
+  // stolen from autoscend
+  boolean hasClubEquipped()
+  {
+    return item_type(equipped_item($slot[weapon])) == "club" || (item_type(equipped_item($slot[weapon])) == "sword" && have_effect($effect[iron palms]) > 0);
+  }
+  if(!(used contains banisher) && have_skill(banisher) && my_fury() >= 5 && hasClubEquipped())
+  {
+    print("Batter Up! on this one!", "blue");
+    return banisher;
   }
 
   return $skill[none];
@@ -856,6 +946,7 @@ void main(string params) {
     case 'hunt':
       if(arglen > 1) {
         visit_bhh(); // refresh BHH status
+        setChoiceAdventures();
         switch(args[1]) {
           // This will accept *ALL* easy/hard/special bounties
           // ie. if you have an easy from a previous day, it will do that one,
@@ -863,34 +954,22 @@ void main(string params) {
           case 'easy':
             print("Hunting easy bounty!", "blue");
 
-            set_property("choiceAdventure502",2);	// Arboreal Respite
-            set_property("choiceAdventure505",2);	// Consciousness of a Stream
-            set_property("choiceAdventure1062",3);	// Lots of Options
-
             while(_bounty(EASY) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(EASY))) break;
             }
             break;
           case 'hard':
-
-            set_property("choiceAdventure669",1);	// The Fast and the Furry-ous
-            set_property("choiceAdventure670",4);	// You Don't Mess Around with Gym
-            set_property("choiceAdventure671",4);	// Out in the Open Source
-            set_property("choiceAdventure675",4);	// Melon Collie and the Infinite Lameness
-            set_property("choiceAdventure676",1);	// Flavor of a Raver
-            set_property("choiceAdventure677",2);	// Copper Feel
-            set_property("choiceAdventure678",4);	// Yeah, You're for Me, Punk Rock Giant
-            set_property("choiceAdventure786",3);	// Working Holiday
-            set_property("choiceAdventure923",1);	// The Black Forest
-            set_property("choiceAdventure924",1);	// You Found Your Thrill
-
             print("Hunting hard bounty!", "blue");
+
             while(_bounty(HARD) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(HARD))) break;
             }
             break;
           case 'special':
             print("Hunting special bounty!", "blue");
+
+            set_property("choiceAdventure276",2);	// The Gong Has Been Bung
+
             while(_bounty(SPECIAL) != $bounty[none] && my_adventures() > 0) {
               if(!hunt_bounty(_bounty(SPECIAL))) break;
             }
