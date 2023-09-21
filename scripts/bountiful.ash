@@ -482,6 +482,7 @@ void setChoiceAdventures()
   set_property("choiceAdventure561",2); // You Must Choose Your Destruction!
   set_property("choiceAdventure563",2); // A Test of your Mettle
   set_property("choiceAdventure189",2); // O Cap'm, My Cap'm
+  set_property("choiceAdventure277",1); // Welcome Back!
 
   // june cleaver IOTM
   set_property("choiceAdventure1467",1);	// Poetic Justice. Don't get 5 adv as we don't handle getting beaten up
@@ -493,6 +494,36 @@ void setChoiceAdventures()
   set_property("choiceAdventure1473",3);	// Bath Time. Get + hot res and init
   set_property("choiceAdventure1474",1);	// Delicious Sprouts. Get mys
   set_property("choiceAdventure1475",1);	// Hypnotic Master. Get mother's necklace
+}
+
+/**
+* Helper function to shrug or burn advs until out of limit mode.
+* Namely for llama lama gong and astral mushroom
+*/
+void handleLimitModes() {
+  if(limit_mode() == "") return;
+
+  // can simply shrug half-astral
+  if(limit_mode() == "astral") {
+      cli_execute("shrug half-astral");
+  }
+
+  // prevent infinite looping if something goes wrong
+  int loopCount = 0;
+  while(limit_mode() != "" && loopCount < 20 && my_adventures() > 0) {
+    loopCount++;
+    
+    if(limit_mode() == "mole") {
+      adv1($location[Mt. Molehill], 1, "combat");
+    }
+    else {
+      // unhandled location
+      abort("Detected we are a limit mode from an unhandled location. Only handles llamma lama gong (Mt. Molehill).");
+    }
+  }
+  if(limit_mode() != "") {
+    abort("Tried to burn off llama lama gong charges but something went wrong.");
+  }
 }
 
 //----------------------------------------
@@ -1036,8 +1067,7 @@ void main(string params) {
             print("Invalid bounty type!", "red");
         }
         // remove effects which can impact future adventuring
-        if(have_effect($effect[half-astral]) > 0)
-          cli_execute("shrug half-astral");
+        handleLimitModes();
         if(my_adventures() == 0) print("Ran out of adventures!", "red");
       } else {
         print("No bounty type given!", "red");
