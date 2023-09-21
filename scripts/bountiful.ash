@@ -682,6 +682,10 @@ boolean hunt_bounty(bounty b) {
       if(have_effect($effect[The Sonata of Sneakiness]) == 0 && have_skill($skill[The Sonata of Sneakiness]) && my_mp() >= mp_cost($skill[The Sonata of Sneakiness])) {
         catch cli_execute("cast The Sonata of Sneakiness");
       }
+      // if ML > 20, always get bounty monster in this location
+      if(have_effect($effect[Ur-Kel\'s Aria of Annoyance]) == 0 && have_skill($skill[Ur-Kel\'s Aria of Annoyance]) && my_mp() >= mp_cost($skill[Ur-Kel\'s Aria of Annoyance])) {
+        catch cli_execute("cast Ur-Kel's Aria of Annoyance");
+      }
     }
     adv1(b.location, 1, "combat");
 
