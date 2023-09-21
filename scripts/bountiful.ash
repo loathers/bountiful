@@ -801,6 +801,14 @@ skill get_unused_skill_banisher(location loc) {
     return banisher;
   }
 
+  // Cursed Monkey Glove Ball IOTM
+  banisher = $skill[Monkey Slap];
+  if(!(used contains banisher) && have_skill(banisher))
+  {
+    print("Monkey Slap on this one!", "blue");
+    return banisher;
+  }
+
   // Cosmic Bowling Ball IOTM
   banisher = $skill[Bowl a Curveball];
   if(!(used contains banisher) && have_skill(banisher))
