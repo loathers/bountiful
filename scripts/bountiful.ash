@@ -477,6 +477,11 @@ void setChoiceAdventures()
   set_property("choiceAdventure923",1);	// The Black Forest
   set_property("choiceAdventure924",1);	// You Found Your Thrill
 
+  // special bounties
+  set_property("choiceAdventure560",2); // Foreshadowing Demon!
+  set_property("choiceAdventure561",2); // You Must Choose Your Destruction!
+  set_property("choiceAdventure563",2); // A Test of your Mettle
+
   // june cleaver IOTM
   set_property("choiceAdventure1467",1);	// Poetic Justice. Don't get 5 adv as we don't handle getting beaten up
   set_property("choiceAdventure1468",2);	// Aunts not Ants. Get muscle
