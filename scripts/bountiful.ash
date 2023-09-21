@@ -481,6 +481,7 @@ void setChoiceAdventures()
   set_property("choiceAdventure560",2); // Foreshadowing Demon!
   set_property("choiceAdventure561",2); // You Must Choose Your Destruction!
   set_property("choiceAdventure563",2); // A Test of your Mettle
+  set_property("choiceAdventure189",2); // O Cap'm, My Cap'm
 
   // june cleaver IOTM
   set_property("choiceAdventure1467",1);	// Poetic Justice. Don't get 5 adv as we don't handle getting beaten up
