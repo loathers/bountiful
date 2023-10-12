@@ -336,7 +336,7 @@ string addBountyToQueue(monster opp, boolean speculate) {
   }
 
   //Why not Red White and Blue?
-  if(!have_effect($effect[Everything Looks Red, White and Blue]) && have_skill($skill[%fn, fire a Red White and Blue Blast]))
+  if(have_effect($effect[Everything Looks Red, White and Blue]) < 1 && have_skill($skill[%fn, fire a Red White and Blue Blast]))
   {
     return "skill %fn, fire a Red White and Blue Blast";
   }
@@ -673,7 +673,7 @@ boolean hunt_bounty(bounty b) {
       buy_banishers();
     
     //If have eagle and don't have RWB, use eagle; get those free copies.
-    if(have_familiar($familiar[Patriotic Eagle]) && !have_effect($effect[Everything Looks Red, White and Blue]))
+    if(have_familiar($familiar[Patriotic Eagle]) && have_effect($effect[Everything Looks Red, White and Blue]) < 1)
       use_familiar($familiar[Patriotic Eagle]);
     else {
     // use Nosy Nose to add copies of bounty to the queue
