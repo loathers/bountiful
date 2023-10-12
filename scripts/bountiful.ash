@@ -336,7 +336,7 @@ string addBountyToQueue(monster opp, boolean speculate) {
   }
 
   //Why not Red White and Blue?
-  if(!have_effect($effect[Everything Looks Red, White and Blue]))
+  if(!have_effect($effect[Everything Looks Red, White and Blue]) && have_skill($skill[%fn, fire a Red White and Blue Blast]))
   {
     return "skill %fn, fire a Red White and Blue Blast";
   }
