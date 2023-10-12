@@ -477,6 +477,13 @@ void setChoiceAdventures()
   set_property("choiceAdventure923",1);	// The Black Forest
   set_property("choiceAdventure924",1);	// You Found Your Thrill
 
+  // special bounties
+  set_property("choiceAdventure560",2); // Foreshadowing Demon!
+  set_property("choiceAdventure561",2); // You Must Choose Your Destruction!
+  set_property("choiceAdventure563",2); // A Test of your Mettle
+  set_property("choiceAdventure189",2); // O Cap'm, My Cap'm
+  set_property("choiceAdventure277",1); // Welcome Back!
+
   // june cleaver IOTM
   set_property("choiceAdventure1467",1);	// Poetic Justice. Don't get 5 adv as we don't handle getting beaten up
   set_property("choiceAdventure1468",2);	// Aunts not Ants. Get muscle
@@ -487,6 +494,36 @@ void setChoiceAdventures()
   set_property("choiceAdventure1473",3);	// Bath Time. Get + hot res and init
   set_property("choiceAdventure1474",1);	// Delicious Sprouts. Get mys
   set_property("choiceAdventure1475",1);	// Hypnotic Master. Get mother's necklace
+}
+
+/**
+* Helper function to shrug or burn advs until out of limit mode.
+* Namely for llama lama gong and astral mushroom
+*/
+void handleLimitModes() {
+  if(limit_mode() == "") return;
+
+  // can simply shrug half-astral
+  if(limit_mode() == "astral") {
+      cli_execute("shrug half-astral");
+  }
+
+  // prevent infinite looping if something goes wrong
+  int loopCount = 0;
+  while(limit_mode() != "" && loopCount < 20 && my_adventures() > 0) {
+    loopCount++;
+    
+    if(limit_mode() == "mole") {
+      adv1($location[Mt. Molehill], 1, "combat");
+    }
+    else {
+      // unhandled location
+      abort("Detected we are a limit mode from an unhandled location. Only handles llamma lama gong (Mt. Molehill).");
+    }
+  }
+  if(limit_mode() != "") {
+    abort("Tried to burn off llama lama gong charges but something went wrong.");
+  }
 }
 
 //----------------------------------------
@@ -682,6 +719,10 @@ boolean hunt_bounty(bounty b) {
       if(have_effect($effect[The Sonata of Sneakiness]) == 0 && have_skill($skill[The Sonata of Sneakiness]) && my_mp() >= mp_cost($skill[The Sonata of Sneakiness])) {
         catch cli_execute("cast The Sonata of Sneakiness");
       }
+      // if ML > 20, always get bounty monster in this location
+      if(have_effect($effect[Ur-Kel\'s Aria of Annoyance]) == 0 && have_skill($skill[Ur-Kel\'s Aria of Annoyance]) && my_mp() >= mp_cost($skill[Ur-Kel\'s Aria of Annoyance])) {
+        catch cli_execute("cast Ur-Kel's Aria of Annoyance");
+      }
     }
     adv1(b.location, 1, "combat");
 
@@ -734,8 +775,9 @@ item get_unused_item_banisher(location loc) {
   monster[item] used = get_used_item_banishers(loc);
 
   foreach banisher in BAN_ITEMS {
-    if(mall_price(banisher) > maxBanish) {
-      print("Not using banisher " + banisher.to_string() + "as it is too expensive. Value > maxBanishCost preference", "red");
+    // use historical price as this is called while in combat
+    if(historical_price(banisher) > maxBanish) {
+      print(`Not using banisher {banisher.to_string()} as it is too expensive. {historical_price(banisher)} > {maxBanish} (maxBanishCost preference)`, "red");
       continue;
     }
     if(!(used contains banisher)) {
@@ -788,6 +830,14 @@ skill get_unused_skill_banisher(location loc) {
   if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher) && get_property("_pantsgivingBanish").to_int() < 5)
   {
     print("Talk About Politics on this one!", "blue");
+    return banisher;
+  }
+
+  // Cursed Monkey Glove Ball IOTM
+  banisher = $skill[Monkey Slap];
+  if(!(used contains banisher) && have_skill(banisher))
+  {
+    print("Monkey Slap on this one!", "blue");
     return banisher;
   }
 
@@ -928,6 +978,22 @@ string combat(int round, monster opp, string text) {
     }
   }
 
+  if(my_location() == $location[Mt. Molehill] && have_skill($skill[Tunnel Downwards])) {
+    return "skill Tunnel Downwards";
+  }
+  if(will_usually_miss())
+  {
+    // simply attacking won't work well
+    if(expected_damage() * 3 > my_hp()) {
+      // use big spell if will die within 3 enemy hits
+      if(have_skill($skill[saucegeyser]) && my_mp() > mp_cost($skill[saucegeyser])) {
+        return "skill saucegeyser";
+      }
+    }
+    if(have_skill($skill[saucestorm]) && my_mp() > mp_cost($skill[saucestorm])) {
+        return "skill saucestorm";
+      }
+  }
   // Kill monster by attacking. Assuming we are sufficiently over leveled
   print("Simply attacking");
   return "attack";
@@ -1002,8 +1068,7 @@ void main(string params) {
             print("Invalid bounty type!", "red");
         }
         // remove effects which can impact future adventuring
-        if(have_effect($effect[half-astral]) > 0)
-          cli_execute("shrug half-astral");
+        handleLimitModes();
         if(my_adventures() == 0) print("Ran out of adventures!", "red");
       } else {
         print("No bounty type given!", "red");
