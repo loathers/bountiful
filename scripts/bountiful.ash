@@ -335,6 +335,12 @@ string addBountyToQueue(monster opp, boolean speculate) {
     return "skill Motif";
   }
 
+  //Why not Red White and Blue? From Patriotic Eagle IOTM
+  if(have_effect($effect[Everything Looks Red, White and Blue]) < 1 && have_skill($skill[%fn\, fire a Red\, White and Blue Blast]))
+  {
+    return "skill %fn, fire a Red White and Blue Blast";
+  }
+
   return "";
 }
 
@@ -665,10 +671,15 @@ boolean hunt_bounty(bounty b) {
             mall_price(CONTENT_ITEMS[b.location]) <= maxSpecial)) {
     if(useBan)
       buy_banishers();
-
-    // use Nosy Nose to add copies of bounty to the queue
-    if(have_familiar($familiar[Nosy Nose]) && my_familiar() != $familiar[Nosy Nose])
+    
+    //If have eagle and don't have RWB, use eagle; get those free copies.
+    if(have_familiar($familiar[Patriotic Eagle]) && have_effect($effect[Everything Looks Red, White and Blue]) < 1 
+      && my_familiar() != $familiar[Patriotic Eagle]) {
+      use_familiar($familiar[Patriotic Eagle]);
+    } // use Nosy Nose to add copies of bounty to the queue 
+    else if(have_familiar($familiar[Nosy Nose]) && my_familiar() != $familiar[Nosy Nose]) {
       use_familiar($familiar[Nosy Nose]);
+    }
 
     // unlock special zone if currently not available
     if(!can_adventure(b.location)) {
