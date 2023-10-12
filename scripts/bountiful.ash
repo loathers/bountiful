@@ -674,7 +674,7 @@ boolean hunt_bounty(bounty b) {
     
     //If have eagle and don't have RWB, use eagle; get those free copies.
     if(have_familiar($familiar[Patriotic Eagle]) && have_effect($effect[Everything Looks Red, White and Blue]) < 1 
-      && my_familiar() != $familiar[Nosy Nose]) {
+      && my_familiar() != $familiar[Patriotic Eagle]) {
       use_familiar($familiar[Patriotic Eagle]);
     } // use Nosy Nose to add copies of bounty to the queue 
     else if(have_familiar($familiar[Nosy Nose]) && my_familiar() != $familiar[Nosy Nose]) {
