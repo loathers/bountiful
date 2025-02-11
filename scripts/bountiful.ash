@@ -66,7 +66,10 @@ int[item] BAN_ITEMS = {
   $item[Louder Than Bomb] : 20,
   $item[crystal skull] : 20,
   $item[tennis ball] : 20,
-  $item[divine champagne popper] : 5
+  $item[divine champagne popper] : 5,
+  $item[stuffed yam stinkbomb] : 15,
+  $item[anchor bomb] : 30,
+  $item[human musk] : 1000, // actually until rollover
 };
 
 // Unlockers
@@ -844,11 +847,27 @@ skill get_unused_skill_banisher(location loc) {
     return banisher;
   }
 
-  // Cursed Monkey Glove Ball IOTM
+  // Cursed Monkey Glove IOTM
   banisher = $skill[Monkey Slap];
   if(!(used contains banisher) && have_skill(banisher))
   {
     print("Monkey Slap on this one!", "blue");
+    return banisher;
+  }
+  
+  // Spring Shoes
+  banisher = $skill[Spring Kick];
+  if(!(used contains banisher) && have_skill(banisher))
+  {
+    print("Spring Kick on this one!", "blue");
+    return banisher;
+  }
+  
+  // Feel Hatred
+  banisher = $skill[Feel Hatred];
+  if(!(used contains banisher) && have_skill(banisher) && get_property("_feelHatredUsed").to_int() < 3)
+  {
+    print("Feel Hatred on this one!", "blue");
     return banisher;
   }
 
@@ -877,7 +896,7 @@ skill get_unused_skill_banisher(location loc) {
   }
 
   // Punt from being a Pig Skinner if Shadows over Loathing
-  banisher = $skill[Punt];
+  banisher = $skill[[28021]Punt];
   if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
   {
     print("Punt on this one!", "blue");
