@@ -69,6 +69,7 @@ int[item] BAN_ITEMS = {
   $item[divine champagne popper] : 5,
   $item[stuffed yam stinkbomb] : 15,
   $item[anchor bomb] : 30,
+  $item[Handful of split pea soup] : 30,
   $item[human musk] : 1000, // actually until rollover
 };
 
@@ -214,6 +215,22 @@ int _remaining(bounty b) {
 
 //----------------------------------------
 // Helper Functions
+
+/**
+* Sorts banishers by price, low to high
+* @returns int[item] - item with index in ordered list
+*/
+item[int] sorted_by_price(int[item] map)
+{
+	item[int] ranked_list;
+	foreach entry in map
+	{
+		ranked_list[count(ranked_list)] = entry;
+	}
+	// Sort
+	sort ranked_list by historical_price(value);
+	return ranked_list;
+}
 
 /**
 * Returns the number of copies available daily
@@ -788,7 +805,7 @@ monster[item] get_used_item_banishers(location loc) {
 item get_unused_item_banisher(location loc) {
   monster[item] used = get_used_item_banishers(loc);
 
-  foreach banisher in BAN_ITEMS {
+  foreach idx,banisher in sorted_by_price(BAN_ITEMS) {
     // use historical price as this is called while in combat
     if(historical_price(banisher) > maxBanish) {
       print(`Not using banisher {banisher.to_string()} as it is too expensive. {historical_price(banisher)} > {maxBanish} (maxBanishCost preference)`, "red");
