@@ -877,7 +877,7 @@ skill get_unused_skill_banisher(location loc) {
   }
 
   // Punt from being a Pig Skinner if Shadows over Loathing
-  banisher = $skill[Punt];
+  banisher = $skill[[28021]Punt];
   if(!(used contains banisher) && have_skill(banisher) && my_mp() >= mp_cost(banisher))
   {
     print("Punt on this one!", "blue");
